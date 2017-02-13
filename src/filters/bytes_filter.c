@@ -47,7 +47,7 @@ void
 bytes_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
 }
 
-zRPC_filter *bytes_filter_create() {
+static zRPC_filter *bytes_filter_create(void *factory_custom) {
     zRPC_filter *filter;
     bytes_filter_data *custom = malloc(sizeof(bytes_filter_data));
     custom->cap = 512;
@@ -57,4 +57,13 @@ zRPC_filter *bytes_filter_create() {
     zRPC_filter_set_on_write_callback(filter, bytes_filter_on_writable, NULL);
     zRPC_filter_set_on_inactive_callback(filter, bytes_filter_on_inactive, NULL);
     return filter;
+}
+
+zRPC_filter_factory *bytes_filter_factory_instance = NULL;
+
+zRPC_filter_factory *bytes_filter_factory() {
+    if(bytes_filter_factory_instance == NULL) {
+        bytes_filter_factory_instance = zRPC_filter_factory_create(bytes_filter_create, NULL);
+    }
+    return bytes_filter_factory_instance;
 }

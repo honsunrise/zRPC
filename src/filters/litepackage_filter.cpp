@@ -89,7 +89,7 @@ void
 litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
 }
 
-zRPC_filter *litepackage_filter_create() {
+static zRPC_filter *litepackage_filter_create(void *fatory_custom) {
     zRPC_filter *filter;
     zRPC_litepackage_custom *custom = (zRPC_litepackage_custom *) malloc(sizeof(zRPC_litepackage_custom));
     custom->new_package = 1;
@@ -103,4 +103,13 @@ zRPC_filter *litepackage_filter_create() {
     zRPC_filter_set_on_write_callback(filter, litepackage_filter_on_writable, NULL);
     zRPC_filter_set_on_inactive_callback(filter, litepackage_filter_on_inactive, NULL);
     return filter;
+}
+
+zRPC_filter_factory *litepackage_filter_factory_instance = NULL;
+
+zRPC_filter_factory *litepackage_filter_factory() {
+    if(litepackage_filter_factory_instance == NULL) {
+        litepackage_filter_factory_instance = zRPC_filter_factory_create(litepackage_filter_create, NULL);
+    }
+    return litepackage_filter_factory_instance;
 }

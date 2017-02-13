@@ -10,7 +10,7 @@
 #include "zRPC/filter/msgpack_filter.h"
 
 struct zRPC_callee {
-    zRPC_filter **filters;
+    zRPC_filter_factory **filters;
     unsigned int filter_count;
     unsigned int filter_cap;
     zRPC_function_table_item *function_table;
@@ -69,6 +69,17 @@ static void callee_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel
     zRPC_channel_set_custom_data(channel, NULL);
 }
 
+static zRPC_filter *zRPC_callee_filter_create(void *factory_custom) {
+    zRPC_filter *filter;
+    zRPC_filter_create(&filter, NULL);
+
+    zRPC_filter_set_on_active_callback(filter, callee_filter_on_active, factory_custom);
+    zRPC_filter_set_on_read_callback(filter, callee_filter_on_readable, factory_custom);
+    zRPC_filter_set_on_write_callback(filter, callee_filter_on_writable, factory_custom);
+    zRPC_filter_set_on_inactive_callback(filter, callee_filter_on_inactive, factory_custom);
+    return filter;
+}
+
 void zRPC_callee_create(zRPC_callee **out, void(*caller_con_callback)(zRPC_caller_instance *)) {
     zRPC_callee *callee = malloc(sizeof(zRPC_callee));
     callee->filter_count = 0;
@@ -77,15 +88,9 @@ void zRPC_callee_create(zRPC_callee **out, void(*caller_con_callback)(zRPC_calle
     callee->caller_con_callback = caller_con_callback;
 
     /*Init filters*/
-    zRPC_filter *filter1 = litepackage_filter_create();
-    zRPC_filter *filter2 = msgpack_filter_create();
-    zRPC_filter *filter3;
-    zRPC_filter_create(&filter3, NULL);
-
-    zRPC_filter_set_on_active_callback(filter3, callee_filter_on_active, callee);
-    zRPC_filter_set_on_read_callback(filter3, callee_filter_on_readable, callee);
-    zRPC_filter_set_on_write_callback(filter3, callee_filter_on_writable, callee);
-    zRPC_filter_set_on_inactive_callback(filter3, callee_filter_on_inactive, callee);
+    zRPC_filter_factory *filter1 = litepackage_filter_factory();
+    zRPC_filter_factory *filter2 = msgpack_filter_factory();
+    zRPC_filter_factory *filter3 = zRPC_filter_factory_create(zRPC_callee_filter_create, callee);
 
     zRPC_callee_add_filter(callee, filter1);
     zRPC_callee_add_filter(callee, filter2);
@@ -100,12 +105,12 @@ void zRPC_callee_destroy(zRPC_callee *callee) {
     }
 }
 
-void zRPC_callee_get_filters(zRPC_callee *callee, zRPC_filter ***filters, int *count) {
+void zRPC_callee_get_filters(zRPC_callee *callee, zRPC_filter_factory ***filters, int *count) {
     *filters = callee->filters;
     *count = callee->filter_count;
 }
 
-void zRPC_callee_add_filter(zRPC_callee *callee, zRPC_filter *filter) {
+void zRPC_callee_add_filter(zRPC_callee *callee, zRPC_filter_factory *filter) {
     if (callee->filter_count == callee->filter_cap - 1) {
         callee->filter_cap *= 2;
         callee->filters = realloc(callee->filters, sizeof(*callee->filters) * callee->filter_cap);

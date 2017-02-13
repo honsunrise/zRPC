@@ -382,7 +382,7 @@ msgpack_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg
 void msgpack_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
 }
 
-zRPC_filter *msgpack_filter_create() {
+static zRPC_filter *msgpack_filter_create(void *factory_custom) {
     zRPC_filter *filter;
     zRPC_filter_create(&filter, NULL);
 
@@ -392,3 +392,13 @@ zRPC_filter *msgpack_filter_create() {
     zRPC_filter_set_on_inactive_callback(filter, msgpack_filter_on_inactive, NULL);
     return filter;
 }
+
+zRPC_filter_factory *msgpack_filter_factory_instance = NULL;
+
+zRPC_filter_factory *msgpack_filter_factory() {
+    if(msgpack_filter_factory_instance == NULL) {
+        msgpack_filter_factory_instance = zRPC_filter_factory_create(msgpack_filter_create, NULL);
+    }
+    return msgpack_filter_factory_instance;
+}
+

@@ -19,11 +19,27 @@ struct zRPC_filter {
     void *custom_data;
 };
 
+struct zRPC_filter_factory {
+    void *custom_data;
+    filter_factory_create create;
+};
+
 struct zRPC_filter_out {
     void **items;
     int count;
     int cap;
 };
+
+zRPC_filter_factory *zRPC_filter_factory_create(filter_factory_create factory, void *custom) {
+    zRPC_filter_factory *ret = malloc(sizeof(zRPC_filter_factory));
+    ret->custom_data = custom;
+    ret->create = factory;
+    return ret;
+}
+
+void zRPC_filter_create_by_factory(zRPC_filter **out, zRPC_filter_factory *factory) {
+    *out = factory->create(factory->custom_data);
+}
 
 void zRPC_filter_create(zRPC_filter **out, void *custom_data) {
     zRPC_filter *filter = malloc(sizeof(zRPC_filter));

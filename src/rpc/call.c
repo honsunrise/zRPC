@@ -44,6 +44,7 @@ void zRPC_call_destroy(zRPC_call *call) {
             free((void *) call->params[i].name);
             SUB_REFERENCE(call->params[i].value, zRPC_value);
         }
+        free(call->params);
         free((void *) call->name);
         free(call);
     }
@@ -101,6 +102,7 @@ void zRPC_call_result_destroy(zRPC_call_result *result) {
         for (int i = 0; i < result->result_count; ++i) {
             free((void *) result->results[i].name);
         }
+        free(result->results);
         free(result);
     }
 }

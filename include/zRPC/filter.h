@@ -12,12 +12,20 @@ struct zRPC_channel;
 
 typedef struct zRPC_filter zRPC_filter;
 
+typedef zRPC_filter* (*filter_factory_create)(void *custom_data);
+
+typedef struct zRPC_filter_factory zRPC_filter_factory;
+
 typedef struct zRPC_filter_out zRPC_filter_out;
 
 typedef void (*filter_callback)(zRPC_filter *filter, struct zRPC_channel *, void *tag);
 
 typedef void (*filter_callback_data)(zRPC_filter *filter, struct zRPC_channel *, void *msg, zRPC_filter_out *out,
                                      void *tag);
+
+zRPC_filter_factory *zRPC_filter_factory_create(filter_factory_create factory, void *custom);
+
+void zRPC_filter_create_by_factory(zRPC_filter **out, zRPC_filter_factory *factory);
 
 void zRPC_filter_create(zRPC_filter **out, void *custom_data);
 

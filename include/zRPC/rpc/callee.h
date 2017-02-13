@@ -19,9 +19,9 @@ void zRPC_callee_create(zRPC_callee **out, void(*caller_con_callback)(zRPC_calle
 
 void zRPC_callee_destroy(zRPC_callee *callee);
 
-void zRPC_callee_get_filters(zRPC_callee *callee, zRPC_filter ***filters, int *count);
+void zRPC_callee_get_filters(zRPC_callee *callee, zRPC_filter_factory ***filters, int *count);
 
-void zRPC_callee_add_filter(zRPC_callee *callee, zRPC_filter *filter);
+void zRPC_callee_add_filter(zRPC_callee *callee, zRPC_filter_factory *filter);
 
 void zRPC_callee_do_call_callback(zRPC_caller_instance *caller, const char *name, zRPC_call_param *params, int count);
 

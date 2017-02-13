@@ -10,6 +10,8 @@ extern "C" {
 
 #include "zRPC/channel.h"
 
+zRPC_filter_factory *bytes_filter_factory();
+
 void
 bytes_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag);
 
@@ -21,8 +23,6 @@ bytes_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, 
 
 void
 bytes_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag);
-
-zRPC_filter *bytes_filter_create();
 
 #ifdef __cplusplus
 }

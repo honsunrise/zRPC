@@ -19,18 +19,24 @@ void zRPC_filter_call_on_read(struct zRPC_filter *filter, zRPC_channel *channel,
 void zRPC_filter_call_on_write(struct zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out);
 
 
-typedef struct zRPC_filter_linked_node {
+typedef struct zRPC_filter_factory_linked_node {
     const char *name;
+    struct zRPC_filter_factory_linked_node *next;
+    struct zRPC_filter_factory_linked_node *prev;
+    struct zRPC_filter_factory *filter_factory;
+} zRPC_filter_factory_linked_node;
+
+struct zRPC_pipe {
+    zRPC_filter_factory_linked_node *head;
+    zRPC_filter_factory_linked_node *tail;
+    int filters;
+};
+
+typedef struct zRPC_filter_linked_node {
     struct zRPC_filter_linked_node *next;
     struct zRPC_filter_linked_node *prev;
     struct zRPC_filter *filter;
 } zRPC_filter_linked_node;
-
-struct zRPC_pipe {
-    zRPC_filter_linked_node *head;
-    zRPC_filter_linked_node *tail;
-    int filters;
-};
 
 typedef struct zRPC_channel_write_param {
     size_t write_remained;
@@ -44,6 +50,8 @@ typedef struct zRPC_channel_write_param {
 struct zRPC_channel {
     zRPC_context *context;
     zRPC_pipe *pipe;
+    zRPC_filter_linked_node *head;
+    zRPC_filter_linked_node *tail;
     zRPC_fd *fd;
     zRPC_ring_buffer *buffer;
     int is_active;
@@ -67,10 +75,10 @@ void zRPC_pipe_destroy(zRPC_pipe *pipe) {
     }
 }
 
-void zRPC_pipe_add_filter_with_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter *filter) {
-    zRPC_filter_linked_node *filter_node = malloc(sizeof(zRPC_filter_linked_node));
+void zRPC_pipe_add_filter_with_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory *filter_factory) {
+    zRPC_filter_factory_linked_node *filter_node = malloc(sizeof(zRPC_filter_factory_linked_node));
     filter_node->name = name;
-    filter_node->filter = filter;
+    filter_node->filter_factory = filter_factory;
     filter_node->next = NULL;
     filter_node->prev = NULL;
     if (pipe->head == NULL) {
@@ -84,10 +92,10 @@ void zRPC_pipe_add_filter_with_name(zRPC_pipe *pipe, const char *name, struct zR
     pipe->filters++;
 }
 
-void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter *filter) {
-    zRPC_filter_linked_node *filter_node = malloc(sizeof(zRPC_filter_linked_node));
+void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_factory) {
+    zRPC_filter_factory_linked_node *filter_node = malloc(sizeof(zRPC_filter_factory_linked_node));
     filter_node->name = "";
-    filter_node->filter = filter;
+    filter_node->filter_factory = filter_factory;
     filter_node->next = NULL;
     filter_node->prev = NULL;
     if (pipe->head == NULL) {
@@ -101,17 +109,34 @@ void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter *filter) {
     pipe->filters++;
 }
 
-void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter **filter) {
+void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory **filter_factory) {
     pipe->filters--;
 }
 
-void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter *filter) {
+void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_factory) {
     pipe->filters--;
 }
 
 void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_context *context) {
     zRPC_channel *channel = (zRPC_channel *) malloc(sizeof(zRPC_channel));
     channel->pipe = pipe;
+    zRPC_filter_factory_linked_node *head = channel->pipe->head;
+    while (head != NULL) {
+        zRPC_filter_linked_node *filter_node = malloc(sizeof(zRPC_filter_linked_node));
+        zRPC_filter_create_by_factory(&filter_node->filter, head->filter_factory);
+        filter_node->next = NULL;
+        filter_node->prev = NULL;
+        if (channel->head == NULL) {
+            channel->head = filter_node;
+        }
+        if (channel->tail != NULL) {
+            channel->tail->next = filter_node;
+        }
+        filter_node->prev = channel->tail;
+        channel->tail = filter_node;
+
+        head = head->next;
+    }
     channel->fd = fd;
     channel->context = context;
     channel->is_active = 0;
@@ -123,8 +148,16 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
 }
 
 void zRPC_channel_destroy(zRPC_channel *channel) {
-    if (channel != NULL)
+    if (channel != NULL) {
+        zRPC_filter_linked_node *head = channel->head;
+        zRPC_filter_linked_node *node;
+        while (head != NULL) {
+            node = head;
+            head = head->next;
+            free (node);
+        }
         free(channel);
+    }
 }
 
 void zRPC_channel_set_custom_data(zRPC_channel *channel, void *custom_data) {
@@ -141,7 +174,7 @@ zRPC_fd *zRPC_channel_get_fd(zRPC_channel *channel) {
 
 
 void *zRPC_channel_on_active(zRPC_channel *channel) {
-    zRPC_filter_linked_node *filter = channel->pipe->head;
+    zRPC_filter_linked_node *filter = channel->head;
     while (filter != NULL) {
         zRPC_filter_call_on_active(filter->filter, channel);
         filter = filter->next;
@@ -182,7 +215,7 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
         total_read += read;
     } while (read == 1024);
     if (total_read != 0) {
-        zRPC_filter_linked_node *filter = channel->pipe->head;
+        zRPC_filter_linked_node *filter = channel->head;
         if (filter != NULL)
             help_call_read_filter(filter, channel, channel->buffer);
     }
@@ -190,7 +223,7 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
 }
 
 void *zRPC_channel_on_inactive(zRPC_channel *channel) {
-    zRPC_filter_linked_node *filter = channel->pipe->head;
+    zRPC_filter_linked_node *filter = channel->head;
     while (filter != NULL) {
         zRPC_filter_call_on_inactive(filter->filter, channel);
         filter = filter->next;
@@ -310,7 +343,7 @@ static void help_call_write_filter(zRPC_filter_linked_node *filter, zRPC_channel
 }
 
 void zRPC_channel_write(zRPC_channel *channel, void *msg) {
-    zRPC_filter_linked_node *filter = channel->pipe->tail;
+    zRPC_filter_linked_node *filter = channel->tail;
     if (filter == NULL)
         return;
     help_call_write_filter(filter, channel, msg);

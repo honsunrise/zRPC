@@ -11,7 +11,7 @@ extern "C" {
 
 #include "zRPC/channel.h"
 
-zRPC_filter *msgpack_filter_create();
+zRPC_filter_factory *msgpack_filter_factory();
 
 void msgpack_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag);
 void msgpack_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag);

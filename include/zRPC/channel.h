@@ -14,6 +14,8 @@ extern "C" {
 
 struct zRPC_filter;
 
+struct zRPC_filter_factory;
+
 typedef struct zRPC_pipe zRPC_pipe;
 
 typedef struct zRPC_channel zRPC_channel;
@@ -22,13 +24,13 @@ void zRPC_pipe_create(zRPC_pipe **out);
 
 void zRPC_pipe_destroy(zRPC_pipe *pipe);
 
-void zRPC_pipe_add_filter_with_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter *filter);
+void zRPC_pipe_add_filter_with_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory *filter_factory);
 
-void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter *filter);
+void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_factory);
 
-void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter **filter);
+void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory **filter_factory);
 
-void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter *filter);
+void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_factory);
 
 void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_context *context);
 
