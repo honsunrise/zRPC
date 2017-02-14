@@ -27,14 +27,14 @@ struct zRPC_caller_filter_custom_data {
 };
 
 static void
-caller_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+caller_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
     zRPC_caller_instance *caller_instance = malloc(sizeof(zRPC_caller_instance));
     caller_instance->channel = channel;
     zRPC_channel_set_custom_data(channel, caller_instance);
 }
 
 static void
-caller_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+caller_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     struct zRPC_caller_filter_custom_data *custom_data = zRPC_filter_get_custom_data(filter);
     IF_TYPE_SAME(zRPC_call_result, msg) {
         zRPC_call_result *result = msg;
@@ -43,7 +43,7 @@ caller_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg,
         zRPC_cond_notify_one(&caller->cond);
     } ELSE_IF_TYPE_SAME (zRPC_call, msg) {
         zRPC_call *call = msg;
-        zRPC_caller *caller = tag;
+        zRPC_caller *caller = custom_data->caller;
         const char *name;
         zRPC_call_get_function(call, &name);
         zRPC_call_result *result;
@@ -62,12 +62,12 @@ caller_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg,
 }
 
 static void
-caller_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+caller_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_filter_out_add_item(out, msg);
 }
 
 static void
-caller_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+caller_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
     zRPC_caller_instance *caller_instance = malloc(sizeof(zRPC_caller_instance));
     free(caller_instance);
 }
@@ -78,10 +78,10 @@ static zRPC_filter *zRPC_caller_filter_create(void *factory_custom) {
     custom_data->caller = factory_custom;
     zRPC_filter_create(&filter, custom_data);
 
-    zRPC_filter_set_on_active_callback(filter, caller_filter_on_active, NULL);
-    zRPC_filter_set_on_read_callback(filter, caller_filter_on_readable, NULL);
-    zRPC_filter_set_on_write_callback(filter, caller_filter_on_writable, NULL);
-    zRPC_filter_set_on_inactive_callback(filter, caller_filter_on_inactive, NULL);
+    zRPC_filter_set_on_active_callback(filter, caller_filter_on_active);
+    zRPC_filter_set_on_read_callback(filter, caller_filter_on_readable);
+    zRPC_filter_set_on_write_callback(filter, caller_filter_on_writable);
+    zRPC_filter_set_on_inactive_callback(filter, caller_filter_on_inactive);
     return filter;
 }
 

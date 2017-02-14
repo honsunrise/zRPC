@@ -18,10 +18,9 @@ typedef struct zRPC_filter_factory zRPC_filter_factory;
 
 typedef struct zRPC_filter_out zRPC_filter_out;
 
-typedef void (*filter_callback)(zRPC_filter *filter, struct zRPC_channel *, void *tag);
+typedef void (*filter_callback)(zRPC_filter *filter, struct zRPC_channel *);
 
-typedef void (*filter_callback_data)(zRPC_filter *filter, struct zRPC_channel *, void *msg, zRPC_filter_out *out,
-                                     void *tag);
+typedef void (*filter_callback_data)(zRPC_filter *filter, struct zRPC_channel *, void *msg, zRPC_filter_out *out);
 
 zRPC_filter_factory *zRPC_filter_factory_create(filter_factory_create factory, void *custom);
 
@@ -31,13 +30,13 @@ void zRPC_filter_create(zRPC_filter **out, void *custom_data);
 
 void zRPC_filter_destroy(zRPC_filter *filter);
 
-void zRPC_filter_set_on_active_callback(zRPC_filter *filter, filter_callback callback, void *tag);
+void zRPC_filter_set_on_active_callback(zRPC_filter *filter, filter_callback callback);
 
-void zRPC_filter_set_on_inactive_callback(zRPC_filter *filter, filter_callback callback, void *tag);
+void zRPC_filter_set_on_inactive_callback(zRPC_filter *filter, filter_callback callback);
 
-void zRPC_filter_set_on_read_callback(zRPC_filter *filter, filter_callback_data callback, void *tag);
+void zRPC_filter_set_on_read_callback(zRPC_filter *filter, filter_callback_data callback);
 
-void zRPC_filter_set_on_write_callback(zRPC_filter *filter, filter_callback_data callback, void *tag);
+void zRPC_filter_set_on_write_callback(zRPC_filter *filter, filter_callback_data callback);
 
 void zRPC_filter_set_custom_data(zRPC_filter *filter, void *custom_data);
 

@@ -13,11 +13,11 @@ typedef struct bytes_filter_data {
 } bytes_filter_data;
 
 void
-bytes_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+bytes_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
 }
 
 void
-bytes_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+bytes_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     bytes_filter_data *custom = zRPC_filter_get_custom_data(filter);
     zRPC_ring_buffer *ring_buf = msg;
     char *buf = malloc(custom->cap);
@@ -37,14 +37,14 @@ bytes_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, 
 }
 
 void
-bytes_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+bytes_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_bytes_buf *buf = msg;
     zRPC_filter_out_add_item(out, PASS_PTR(buf, zRPC_bytes_buf));
     SUB_REFERENCE(buf, zRPC_bytes_buf);
 }
 
 void
-bytes_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+bytes_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
 }
 
 static zRPC_filter *bytes_filter_create(void *factory_custom) {
@@ -52,10 +52,10 @@ static zRPC_filter *bytes_filter_create(void *factory_custom) {
     bytes_filter_data *custom = malloc(sizeof(bytes_filter_data));
     custom->cap = 512;
     zRPC_filter_create(&filter, custom);
-    zRPC_filter_set_on_active_callback(filter, bytes_filter_on_active, NULL);
-    zRPC_filter_set_on_read_callback(filter, bytes_filter_on_readable, NULL);
-    zRPC_filter_set_on_write_callback(filter, bytes_filter_on_writable, NULL);
-    zRPC_filter_set_on_inactive_callback(filter, bytes_filter_on_inactive, NULL);
+    zRPC_filter_set_on_active_callback(filter, bytes_filter_on_active);
+    zRPC_filter_set_on_read_callback(filter, bytes_filter_on_readable);
+    zRPC_filter_set_on_write_callback(filter, bytes_filter_on_writable);
+    zRPC_filter_set_on_inactive_callback(filter, bytes_filter_on_inactive);
     return filter;
 }
 

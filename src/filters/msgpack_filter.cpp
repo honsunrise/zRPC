@@ -358,12 +358,12 @@ static void unpackage(zRPC_bytes_buf *buf, void **out) {
     *out = NULL;
 }
 
-void msgpack_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+void msgpack_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
 
 }
 
 void
-msgpack_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+msgpack_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_bytes_buf *buf = (zRPC_bytes_buf *) msg;
     zRPC_call *call;
     unpackage(buf, (void **) &call);
@@ -372,24 +372,24 @@ msgpack_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg
 }
 
 void
-msgpack_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+msgpack_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_bytes_buf *buf;
     package(msg, &buf);
     zRPC_filter_out_add_item(out, PASS_PTR(buf, zRPC_bytes_buf));
 }
 
 
-void msgpack_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+void msgpack_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
 }
 
 static zRPC_filter *msgpack_filter_create(void *factory_custom) {
     zRPC_filter *filter;
     zRPC_filter_create(&filter, NULL);
 
-    zRPC_filter_set_on_active_callback(filter, msgpack_filter_on_active, NULL);
-    zRPC_filter_set_on_read_callback(filter, msgpack_filter_on_readable, NULL);
-    zRPC_filter_set_on_write_callback(filter, msgpack_filter_on_writable, NULL);
-    zRPC_filter_set_on_inactive_callback(filter, msgpack_filter_on_inactive, NULL);
+    zRPC_filter_set_on_active_callback(filter, msgpack_filter_on_active);
+    zRPC_filter_set_on_read_callback(filter, msgpack_filter_on_readable);
+    zRPC_filter_set_on_write_callback(filter, msgpack_filter_on_writable);
+    zRPC_filter_set_on_inactive_callback(filter, msgpack_filter_on_inactive);
     return filter;
 }
 

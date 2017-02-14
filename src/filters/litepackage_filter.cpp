@@ -25,15 +25,15 @@ struct zRPC_litepackage_custom {
 };
 
 void
-litepackage_filter_on_active(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+litepackage_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
 }
 
 void
-litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
 }
 
 void
-litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_ring_buffer *buf = (zRPC_ring_buffer *) msg;
     zRPC_litepackage_custom *custom = (zRPC_litepackage_custom *) zRPC_filter_get_custom_data(filter);
     lite_package *package = &custom->package;
@@ -71,7 +71,7 @@ litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void 
 }
 
 void
-litepackage_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+litepackage_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_bytes_buf *buf = (zRPC_bytes_buf *) msg;
     zRPC_bytes_buf *buf_out;
     size_t header_len = sizeof(lite_package_header);
@@ -86,7 +86,7 @@ litepackage_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void 
 }
 
 void
-litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out, void *tag) {
+litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
 }
 
 static zRPC_filter *litepackage_filter_create(void *fatory_custom) {
@@ -98,10 +98,10 @@ static zRPC_filter *litepackage_filter_create(void *fatory_custom) {
     custom->header_remainder = sizeof(lite_package_header);
     custom->header_pos = 0;
     zRPC_filter_create(&filter, custom);
-    zRPC_filter_set_on_active_callback(filter, litepackage_filter_on_active, NULL);
-    zRPC_filter_set_on_read_callback(filter, litepackage_filter_on_readable, NULL);
-    zRPC_filter_set_on_write_callback(filter, litepackage_filter_on_writable, NULL);
-    zRPC_filter_set_on_inactive_callback(filter, litepackage_filter_on_inactive, NULL);
+    zRPC_filter_set_on_active_callback(filter, litepackage_filter_on_active);
+    zRPC_filter_set_on_read_callback(filter, litepackage_filter_on_readable);
+    zRPC_filter_set_on_write_callback(filter, litepackage_filter_on_writable);
+    zRPC_filter_set_on_inactive_callback(filter, litepackage_filter_on_inactive);
     return filter;
 }
 

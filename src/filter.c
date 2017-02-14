@@ -8,13 +8,9 @@
 
 
 struct zRPC_filter {
-    void *on_active_tag;
     filter_callback on_active;
-    void *on_inactive_tag;
     filter_callback on_inactive;
-    void *on_read_tag;
     filter_callback_data on_read;
-    void *on_write_tag;
     filter_callback_data on_write;
     void *custom_data;
 };
@@ -54,23 +50,19 @@ void zRPC_filter_destroy(zRPC_filter *filter) {
     }
 }
 
-void zRPC_filter_set_on_active_callback(zRPC_filter *filter, filter_callback callback, void *tag) {
-    filter->on_active_tag = tag;
+void zRPC_filter_set_on_active_callback(zRPC_filter *filter, filter_callback callback) {
     filter->on_active = callback;
 }
 
-void zRPC_filter_set_on_inactive_callback(zRPC_filter *filter, filter_callback callback, void *tag) {
-    filter->on_inactive_tag = tag;
+void zRPC_filter_set_on_inactive_callback(zRPC_filter *filter, filter_callback callback) {
     filter->on_inactive = callback;
 }
 
-void zRPC_filter_set_on_read_callback(zRPC_filter *filter, filter_callback_data callback, void *tag) {
-    filter->on_read_tag = tag;
+void zRPC_filter_set_on_read_callback(zRPC_filter *filter, filter_callback_data callback) {
     filter->on_read = callback;
 }
 
-void zRPC_filter_set_on_write_callback(zRPC_filter *filter, filter_callback_data callback, void *tag) {
-    filter->on_write_tag = tag;
+void zRPC_filter_set_on_write_callback(zRPC_filter *filter, filter_callback_data callback) {
     filter->on_write = callback;
 }
 
@@ -83,20 +75,20 @@ void *zRPC_filter_get_custom_data(zRPC_filter *filter) {
 }
 
 void zRPC_filter_call_on_active(zRPC_filter *filter, struct zRPC_channel *channel) {
-    (*filter->on_active)(filter, channel, filter->on_active_tag);
+    (*filter->on_active)(filter, channel);
 }
 
 
 void zRPC_filter_call_on_inactive(zRPC_filter *filter, struct zRPC_channel *channel) {
-    (*filter->on_inactive)(filter, channel, filter->on_inactive_tag);
+    (*filter->on_inactive)(filter, channel);
 }
 
 void zRPC_filter_call_on_read(zRPC_filter *filter, struct zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
-    (*filter->on_read)(filter, channel, msg, out, filter->on_active_tag);
+    (*filter->on_read)(filter, channel, msg, out);
 }
 
 void zRPC_filter_call_on_write(zRPC_filter *filter, struct zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
-    (*filter->on_write)(filter, channel, msg, out, filter->on_active_tag);
+    (*filter->on_write)(filter, channel, msg, out);
 }
 
 void zRPC_filter_out_create(zRPC_filter_out **out) {
