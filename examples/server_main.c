@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 
     zRPC_pipe *server_pipe;
     zRPC_pipe_create(&server_pipe);
-    zRPC_filter **filters;
+    zRPC_filter_factory **filters;
     int filter_count;
     zRPC_callee_get_filters(callee, &filters, &filter_count);
     for (int i = 0; i < filter_count; ++i) {

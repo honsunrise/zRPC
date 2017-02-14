@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     zRPC_pipe *client_pipe;
     zRPC_pipe_create(&client_pipe);
-    zRPC_filter **filters_client;
+    zRPC_filter_factory **filters_client;
     int filter_count_client;
     zRPC_caller_get_filters(caller, &filters_client, &filter_count_client);
     for (int i = 0; i < filter_count_client; ++i) {
