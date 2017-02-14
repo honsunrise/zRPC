@@ -43,6 +43,7 @@ int test_client_thread(void *arg) {
         if (ret == 0)
             break;
         printf("%d add %d + %d result: %ld\n", i++, a, b, result);
+        usleep(50000);
     }
     return 0;
 }

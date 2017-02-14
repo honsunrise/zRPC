@@ -68,7 +68,8 @@ caller_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg,
 
 static void
 caller_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
-
+    zRPC_caller_instance *caller_instance = malloc(sizeof(zRPC_caller_instance));
+    free(caller_instance);
 }
 
 static zRPC_filter *zRPC_caller_filter_create(void *factory_custom) {

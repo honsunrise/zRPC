@@ -120,6 +120,7 @@ void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter
 void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_context *context) {
     zRPC_channel *channel = (zRPC_channel *) malloc(sizeof(zRPC_channel));
     channel->pipe = pipe;
+    channel->tail = channel->head = NULL;
     zRPC_filter_factory_linked_node *head = channel->pipe->head;
     while (head != NULL) {
         zRPC_filter_linked_node *filter_node = malloc(sizeof(zRPC_filter_linked_node));
@@ -149,10 +150,12 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
 
 void zRPC_channel_destroy(zRPC_channel *channel) {
     if (channel != NULL) {
+        zRPC_fd_destroy(channel->fd);
         zRPC_filter_linked_node *head = channel->head;
         zRPC_filter_linked_node *node;
         while (head != NULL) {
             node = head;
+            zRPC_filter_destroy(node->filter);
             head = head->next;
             free (node);
         }
@@ -205,6 +208,7 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
         if (read == 0) {
             zRPC_fd_close(channel->fd);
             zRPC_channel_on_inactive(channel);
+            zRPC_channel_destroy(channel);
             return NULL;
         }
         if (read >= 0) {
@@ -251,14 +255,14 @@ void *zRPC_channel_on_write(zRPC_channel *channel) {
         }
         gone:
         zRPC_list_add_tail(&write_param->list_node_done, &channel->done_write);
-        if (write_param->write_callback != NULL) {
-            zRPC_runnable_run(write_param->write_callback);
-        }
-        free(write_param);
     }
     zRPC_list_for_each(pos, &channel->done_write) {
         zRPC_channel_write_param *write_param = zRPC_list_entry(pos, zRPC_channel_write_param, list_node_done);
         zRPC_list_del(&write_param->list_node_pending);
+        if (write_param->write_callback != NULL) {
+            zRPC_runnable_run(write_param->write_callback);
+        }
+        free(write_param);
     }
     zRPC_list_init(&channel->done_write);
     return NULL;

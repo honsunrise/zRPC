@@ -107,6 +107,7 @@ static void zRPC_on_timer_retry(zRPC_resolved_param *param) {
 static void complete_runnable(void *arg) {
     zRPC_resolved *resolved = arg;
     resolved->callback(resolved->custom_arg, resolved);
+    free(resolved->inetaddres.addrs);
 }
 
 void zRPC_resolver_address(zRPC_context *context, const char *name, zRPC_resolver_complete_callback callback,

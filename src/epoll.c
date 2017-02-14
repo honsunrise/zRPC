@@ -46,8 +46,10 @@ static void *initialize(zRPC_context *context) {
 }
 
 static void uninitialize(zRPC_context *context) {
-    if (context->event_engine_context)
+    if (context->event_engine_context) {
+        free(((zRPC_epoll_context*)context->event_engine_context)->ep_evs);
         free(context->event_engine_context);
+    }
 }
 
 static int add(zRPC_context *context, zRPC_event *event) {

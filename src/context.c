@@ -108,6 +108,7 @@ void zRPC_context_fd_event_happen(zRPC_context *context, zRPC_fd *fd, int res) {
         pending_event = zRPC_list_entry(pos, zRPC_pending_event, list_node);
         if (pending_event->event == event) {
             event->event_happen |= pending_event->event_happen;
+            free(pending_event);
         }
     }
     zRPC_list_init(&context->event_pending);

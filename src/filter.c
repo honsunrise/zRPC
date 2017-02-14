@@ -49,6 +49,7 @@ void zRPC_filter_create(zRPC_filter **out, void *custom_data) {
 
 void zRPC_filter_destroy(zRPC_filter *filter) {
     if (filter) {
+        free(filter->custom_data);
         free(filter);
     }
 }

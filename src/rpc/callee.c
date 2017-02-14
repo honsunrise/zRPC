@@ -73,6 +73,8 @@ callee_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg,
 
 
 static void callee_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *tag) {
+    struct zRPC_callee_filter_custom_data *custom_data = zRPC_filter_get_custom_data(filter);
+    free(custom_data->caller_instance);
 }
 
 static zRPC_filter *zRPC_callee_filter_create(void *factory_custom) {
