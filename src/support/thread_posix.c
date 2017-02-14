@@ -18,8 +18,8 @@ typedef struct zRPC_THREAD {
 static void *thread_body(void *argv) {
     /* copy to local variable*/
     zRPC_THREAD t = *(zRPC_THREAD *) argv;
-    free(argv);
     (*t.worker)(t.arg);
+    free(argv);
     return 0;
 }
 
