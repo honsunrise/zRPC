@@ -150,8 +150,6 @@ static void *on_read(void *arg) {
         zRPC_event *event = zRPC_event_fd_create(fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, on_write);
         zRPC_context_register_event(zRPC_server_get_context(server), event);
         zRPC_server_add_channel(server, channel);
-        zRPC_channel_on_active(channel);
-
         free(addr_str);
     }
 
