@@ -163,7 +163,7 @@ void zRPC_caller_wait_result(zRPC_caller *caller, zRPC_call *call, zRPC_call_res
     do {
         zRPC_sem_wait(&call->sem);
         zRPC_mutex_lock(&caller->mutex);
-        ret = hashmapGet(caller->called_map, (void *) call->request_id);
+        ret = hashmapRemove(caller->called_map, (void *) call->request_id);
         zRPC_mutex_unlock(&caller->mutex);
     } while (ret == NULL);
     *result = ret;

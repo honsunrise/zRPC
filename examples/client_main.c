@@ -23,6 +23,7 @@ int caller_add(zRPC_caller *caller, zRPC_client *client, int64_t a, int64_t b, i
     zRPC_caller_destroy_result(caller, result);
     free(params);
     *ret = value->int64_value;
+    SUB_REFERENCE(value, zRPC_value);
     return *ret;
 }
 
