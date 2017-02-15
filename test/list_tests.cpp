@@ -6,16 +6,16 @@
 #include "../src/lfds/lfds.h"
 #include <thread>
 
-struct zRPC_list_state list;
+struct zRPC_lfds_list_state list;
 int long run_insert_test() {
-    struct zRPC_list_element *e_p = (zRPC_list_element *) malloc(sizeof(struct zRPC_list_element));
+    struct zRPC_lfds_list_element *e_p = (zRPC_lfds_list_element *) malloc(sizeof(struct zRPC_lfds_list_element));
     e_p->value = (void *) 'H';
-    zRPC_list_insert_at_start(&list, e_p);
+    zRPC_lfds_list_insert_at_start(&list, e_p);
     return (int long)e_p->value;
 }
 
 int long get_list_count() {
-    return zRPC_list_count(&list);
+    return zRPC_lfds_list_count(&list);
 }
 
 int long run_multi_thread_test() {
@@ -46,7 +46,7 @@ TEST (ListTests, MultiThreadTests) {
 
 int main(int argc, char **argv) {
     srand(time(NULL));
-    zRPC_list_init(&list);
+    zRPC_lfds_list_init(&list);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

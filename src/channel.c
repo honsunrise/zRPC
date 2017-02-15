@@ -6,7 +6,7 @@
 #include "zRPC/support/useful.h"
 #include "zRPC/context.h"
 #include "zRPC/channel.h"
-#include "zRPC/support/ring_buf.h"
+#include "zRPC/ds/ring_buf.h"
 #include "zRPC/support/bytes_buf.h"
 
 /* Call filter function */

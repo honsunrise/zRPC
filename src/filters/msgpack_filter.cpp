@@ -254,11 +254,14 @@ static void package(void *in, zRPC_bytes_buf **buf) {
         msgpack::packer<msgpack::sbuffer> pk(&buffer);
         /* Init flag magic */
         pk.pack(std::string("ca"));
-        /* Init function name */
 
+        /* Init function name */
         const char *name;
         zRPC_call_get_function(call, &name);
         pk.pack(std::string(name));
+
+        /* Init request id*/
+        pk.pack(call->request_id);
 
         /* Init function params */
         zRPC_call_param *params;
@@ -286,6 +289,10 @@ static void package(void *in, zRPC_bytes_buf **buf) {
         msgpack::packer<msgpack::sbuffer> pk(&buffer);
         /* Init flag magic */
         pk.pack(std::string("cr"));
+
+        /* Init request id*/
+        pk.pack(result->request_id);
+
         /* Init results */
         zRPC_call_param *results;
         unsigned int result_count;
@@ -329,7 +336,11 @@ static void unpackage(zRPC_bytes_buf *buf, void **out) {
         zRPC_call_set_function(ret_call, name.c_str());
 
         if (!pac.next(oh)) goto error;
+        int request_id;
+        request_id = oh.get().convert();
+        ret_call->request_id = request_id;
 
+        if (!pac.next(oh)) goto error;
         const msgpack::object_map &map = oh.get().via.map;
 
         for (int i = 0; i < map.size; ++i) {
@@ -343,7 +354,13 @@ static void unpackage(zRPC_bytes_buf *buf, void **out) {
         zRPC_call_result *call_result;
         zRPC_call_result_create(&call_result);
         if (!pac.next(oh)) goto error;
+        int request_id;
+        request_id = oh.get().convert();
+
+        if (!pac.next(oh)) goto error;
         const msgpack::object_map &map = oh.get().via.map;
+
+        call_result->request_id = request_id;
 
         for (int i = 0; i < map.size; ++i) {
             std::string key;

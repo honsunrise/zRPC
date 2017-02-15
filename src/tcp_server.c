@@ -104,6 +104,40 @@ static void *warp_fd_callback(void *origin_arg) {
     return (*arg->callback)(arg->arg1);
 };
 
+struct child_thread_param {
+    zRPC_server *server;
+    zRPC_fd *new_fd;
+};
+
+static int child_io_thread(void *arg) {
+    struct child_thread_param *param = arg;
+    zRPC_server *server = param->server;
+    zRPC_fd *new_fd = param->new_fd;
+    free(param);
+
+    zRPC_context *context = zRPC_context_create();
+    zRPC_channel *channel;
+    zRPC_channel_create(&channel, zRPC_server_get_pipe(server), new_fd, context);
+
+    zRPC_warp_fd_callback_arg *arg_write = malloc(sizeof(zRPC_warp_fd_callback_arg));
+    zRPC_warp_fd_callback_arg *arg_read = malloc(sizeof(zRPC_warp_fd_callback_arg));
+    zRPC_runnable *on_write = zRPC_runnable_create(warp_fd_callback, arg_write, zRPC_runnable_noting_callback);
+    zRPC_runnable *on_read = zRPC_runnable_create(warp_fd_callback, arg_read, zRPC_runnable_noting_callback);
+
+    arg_read->arg1 = channel;
+    arg_read->callback = (void *(*)(void *)) zRPC_channel_event_on_read;
+
+    arg_write->arg1 = channel;
+    arg_write->callback = (void *(*)(void *)) zRPC_channel_event_on_write;
+
+    zRPC_event *event = zRPC_event_fd_create(new_fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, on_write);
+    zRPC_context_register_event(context, event);
+    zRPC_server_add_channel(server, channel);
+
+    zRPC_context_dispatch(context);
+    return 0;
+}
+
 static void *on_read(void *arg) {
     int err;
     zRPC_listener *listener = arg;
@@ -130,29 +164,15 @@ static void *on_read(void *arg) {
 
         zRPC_set_socket_no_sigpipe_if(new_fd);
         addr_str = zRPC_inetaddr_to_uri(&address);
+        free(addr_str);
 
         fd = zRPC_fd_create(new_fd);
-
-        zRPC_channel *channel;
-        zRPC_channel_create(&channel, zRPC_server_get_pipe(server), fd, zRPC_server_get_context(server));
-
-        zRPC_warp_fd_callback_arg *arg_write = malloc(sizeof(zRPC_warp_fd_callback_arg));
-        zRPC_warp_fd_callback_arg *arg_read = malloc(sizeof(zRPC_warp_fd_callback_arg));
-        zRPC_runnable *on_write = zRPC_runnable_create(warp_fd_callback, arg_write, zRPC_runnable_noting_callback);
-        zRPC_runnable *on_read = zRPC_runnable_create(warp_fd_callback, arg_read, zRPC_runnable_noting_callback);
-
-        arg_read->arg1 = channel;
-        arg_read->callback = (void *(*)(void *)) zRPC_channel_event_on_read;
-
-        arg_write->arg1 = channel;
-        arg_write->callback = (void *(*)(void *)) zRPC_channel_event_on_write;
-
-        zRPC_event *event = zRPC_event_fd_create(fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, on_write);
-        zRPC_context_register_event(zRPC_server_get_context(server), event);
-        zRPC_server_add_channel(server, channel);
-        free(addr_str);
+        struct child_thread_param *param = malloc(sizeof(struct child_thread_param ));
+        param->new_fd = fd;
+        param->server = server;
+        zRPC_thread_id thread_id;
+        zRPC_thread_create(&thread_id, child_io_thread, param, ZRPC_THREAD_FLAG_JOINABLE);
     }
-
     error:
     return NULL;
 }

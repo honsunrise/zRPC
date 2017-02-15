@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #include "zRPC/support/thread.h"
-#include "zRPC/support/list.h"
+#include "zRPC/ds/list.h"
 #include "zRPC/support/lock.h"
 #include "zRPC/support/runnable.h"
 #include "zRPC/support/timer.h"

@@ -8,16 +8,17 @@
 #include "zRPC/rpc/caller.h"
 #include "zRPC/filter/msgpack_filter.h"
 #include "zRPC/filter/litepackage_filter.h"
+#include "zRPC/ds/hashmap.h"
 
 struct zRPC_caller {
     zRPC_filter_factory **filters;
     unsigned int filter_count;
     unsigned int filter_cap;
     zRPC_mutex mutex;
-    zRPC_cond cond;
-    zRPC_call_result *result;
     zRPC_queue *call_queue;
     zRPC_function_table_item *function_table;
+    zRPC_hashmap *calling_map;
+    zRPC_hashmap *called_map;
     unsigned int function_count;
 };
 
@@ -33,14 +34,21 @@ caller_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
     zRPC_channel_set_custom_data(channel, caller_instance);
 }
 
+static volatile int i = 0;
 static void
 caller_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     struct zRPC_caller_filter_custom_data *custom_data = zRPC_filter_get_custom_data(filter);
     IF_TYPE_SAME(zRPC_call_result, msg) {
         zRPC_call_result *result = msg;
         zRPC_caller *caller = custom_data->caller;
-        caller->result = result;
-        zRPC_cond_notify_one(&caller->cond);
+        zRPC_call *call = hashmapGet(caller->calling_map, (void *) result->request_id);
+        if (call != NULL) {
+            zRPC_mutex_lock(&caller->mutex);
+            hashmapRemove(caller->calling_map, (void *) result->request_id);
+            hashmapPut(caller->called_map, (void *) call->request_id, result);
+            zRPC_mutex_unlock(&caller->mutex);
+            zRPC_sem_post(&call->sem);
+        }
     } ELSE_IF_TYPE_SAME (zRPC_call, msg) {
         zRPC_call *call = msg;
         zRPC_caller *caller = custom_data->caller;
@@ -85,6 +93,13 @@ static zRPC_filter *zRPC_caller_filter_create(void *factory_custom) {
     return filter;
 }
 
+static int int_hash_function(void *key) {
+    return (int)(key);
+}
+
+static int equals(void* keyA, void* keyB) {
+    return keyA == keyB;
+}
 
 void zRPC_caller_create(zRPC_caller **out) {
     zRPC_caller *caller = malloc(sizeof(zRPC_caller));
@@ -93,8 +108,8 @@ void zRPC_caller_create(zRPC_caller **out) {
     caller->filters = malloc(sizeof(*caller->filters) * caller->filter_cap);
     zRPC_queue_create(&caller->call_queue);
     zRPC_mutex_init(&caller->mutex);
-    zRPC_cond_init(&caller->cond);
-
+    caller->calling_map = hashmapCreate(1000, int_hash_function, equals);
+    caller->called_map = hashmapCreate(1000, int_hash_function, equals);
     /*Init filters*/
     zRPC_filter_factory *filter1 = litepackage_filter_factory();
     zRPC_filter_factory *filter2 = msgpack_filter_factory();
@@ -128,19 +143,30 @@ void zRPC_caller_add_filter(zRPC_caller *caller, zRPC_filter_factory *filter) {
 
 zRPC_call *
 zRPC_caller_do_call(zRPC_caller *caller, zRPC_client *client, const char *name, zRPC_call_param *params, int count) {
+    static int request_id = 0;
     zRPC_call *call;
     zRPC_call_create(&call);
+    call->request_id = request_id++;
     zRPC_call_set_function(call, name);
     for (int i = 0; i < count; ++i) {
         zRPC_call_set_param(call, params[i].name, PASS_PTR(params[i].value, zRPC_value));
     }
+    zRPC_mutex_lock(&caller->mutex);
+    hashmapPut(caller->calling_map, (void *) call->request_id, call);
+    zRPC_mutex_unlock(&caller->mutex);
     zRPC_client_write(client, call);
     return call;
 }
 
 void zRPC_caller_wait_result(zRPC_caller *caller, zRPC_call *call, zRPC_call_result **result) {
-    zRPC_cond_wait(&caller->cond, &caller->mutex);
-    *result = caller->result;
+    zRPC_call_result *ret = NULL;
+    do {
+        zRPC_sem_wait(&call->sem);
+        zRPC_mutex_lock(&caller->mutex);
+        ret = hashmapGet(caller->called_map, (void *) call->request_id);
+        zRPC_mutex_unlock(&caller->mutex);
+    } while (ret == NULL);
+    *result = ret;
 }
 
 void zRPC_caller_destroy_result(zRPC_caller *caller, zRPC_call_result *result) {

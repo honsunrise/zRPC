@@ -7,8 +7,8 @@
 
 #include <malloc.h>
 #include <zRPC/support/timer.h>
-#include "zRPC/support/queue.h"
-#include "zRPC/support/list.h"
+#include "zRPC/ds/queue.h"
+#include "zRPC/ds/list.h"
 #include "fd.h"
 
 typedef enum zRPC_EVENT_TYPE {

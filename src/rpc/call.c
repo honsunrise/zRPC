@@ -11,30 +11,16 @@ struct zRPC_callback_desc {
 
 };
 
-struct zRPC_call {
-    DECLARE_RTTI(zRPC_call);
-    const char *name;
-    int flag;
-    unsigned int param_count;
-    unsigned int param_cab;
-    zRPC_call_param *params;
-};
-
-struct zRPC_call_result {
-    DECLARE_RTTI(zRPC_call_result);
-    unsigned int result_count;
-    unsigned int result_cab;
-    zRPC_call_param *results;
-};
-
 void zRPC_call_create(zRPC_call **out) {
     zRPC_call *call = malloc(sizeof(zRPC_call));
     RTTI_INIT_PTR(zRPC_call, call);
     call->name = NULL;
     call->flag = 0;
+    call->request_id = 0;
     call->param_cab = 5;
     call->params = malloc(sizeof(*call->params) * call->param_cab);
     call->param_count = 0;
+    zRPC_sem_init(&call->sem, 0);
     *out = call;
 }
 
@@ -46,6 +32,7 @@ void zRPC_call_destroy(zRPC_call *call) {
         }
         free(call->params);
         free((void *) call->name);
+        zRPC_sem_destroy(&call->sem);
         free(call);
     }
 }

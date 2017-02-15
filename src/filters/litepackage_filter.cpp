@@ -5,7 +5,7 @@
 #include <memory.h>
 #include "zRPC/filter.h"
 #include "zRPC/filter/litepackage_filter.h"
-#include "zRPC/support/ring_buf.h"
+#include "zRPC/ds/ring_buf.h"
 #include "zRPC/support/bytes_buf.h"
 
 typedef struct lite_package_header {
@@ -38,35 +38,39 @@ litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void 
     zRPC_litepackage_custom *custom = (zRPC_litepackage_custom *) zRPC_filter_get_custom_data(filter);
     lite_package *package = &custom->package;
     size_t read;
-    if (custom->new_package) {
-        read = zRPC_ring_buf_read(buf, (char *) &package->header + custom->header_pos, custom->header_remainder);
+    while (1) {
+        if (custom->new_package) {
+            read = zRPC_ring_buf_read(buf, (char *) &package->header + custom->header_pos, custom->header_remainder);
+            if (read == 0)
+                return;
+            if (read < custom->header_remainder) {
+                custom->header_remainder -= read;
+                custom->header_pos += read;
+                return;
+            }
+            if (package->header.len == 0) {
+                return;
+            }
+            zRPC_bytes_buf_create((size_t) package->header.len, &package->body);
+            custom->remainder = (size_t) package->header.len;
+            custom->pos = 0;
+            custom->new_package = 0;
+        }
+
+        read = zRPC_ring_buf_read(buf, (char *) zRPC_bytes_buf_addr(package->body) + custom->pos, custom->remainder);
         if (read == 0)
             return;
-        if (read < custom->header_remainder) {
-            custom->header_remainder -= read;
-            custom->header_pos += read;
-            return;
+        if (read == custom->remainder) {
+            zRPC_filter_out_add_item(out, PASS_PTR(package->body, zRPC_bytes_buf));
+            SUB_REFERENCE(package->body, zRPC_bytes_buf);
+            package->body = NULL;
+            custom->new_package = 1;
+            custom->header_remainder = sizeof(lite_package_header);
+            custom->header_pos = 0;
+        } else {
+            custom->remainder -= read;
+            custom->pos += read;
         }
-        if (package->header.len == 0) {
-            return;
-        }
-        zRPC_bytes_buf_create((size_t) package->header.len, &package->body);
-        custom->remainder = (size_t) package->header.len;
-        custom->pos = 0;
-        custom->new_package = 0;
-    }
-
-    read = zRPC_ring_buf_read(buf, (char *) zRPC_bytes_buf_addr(package->body) + custom->pos, custom->remainder);
-    if (read == custom->remainder) {
-        zRPC_filter_out_add_item(out, PASS_PTR(package->body, zRPC_bytes_buf));
-        SUB_REFERENCE(package->body, zRPC_bytes_buf);
-        package->body = NULL;
-        custom->new_package = 1;
-        custom->header_remainder = sizeof(lite_package_header);
-        custom->header_pos = 0;
-    } else {
-        custom->remainder -= read;
-        custom->pos += read;
     }
 }
 

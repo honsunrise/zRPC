@@ -6,7 +6,7 @@
 #define ZRPC_LIST_H
 
 #include <stddef.h>
-#include "useful.h"
+#include "zRPC/support/useful.h"
 
 typedef struct zRPC_list_head {
     struct zRPC_list_head *prev;

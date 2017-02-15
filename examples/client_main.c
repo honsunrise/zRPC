@@ -40,10 +40,7 @@ int test_client_thread(void *arg) {
         int b = rand() % 100;
         int64_t result;
         int ret = caller_add(param->caller, param->client, a, b, &result);
-        if (ret == 0)
-            break;
         printf("%d add %d + %d result: %ld\n", i++, a, b, result);
-        usleep(50000);
     }
     return 0;
 }

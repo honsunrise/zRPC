@@ -4,7 +4,7 @@
 
 #include <string.h>
 #include "zRPC/filter.h"
-#include "zRPC/support/ring_buf.h"
+#include "zRPC/ds/ring_buf.h"
 #include "zRPC/support/bytes_buf.h"
 #include "zRPC/filter/bytes_filter.h"
 

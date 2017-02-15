@@ -4,7 +4,7 @@
 
 #include <malloc.h>
 #include <memory.h>
-#include "zRPC/support/queue.h"
+#include "zRPC/ds/queue.h"
 
 /* this number for programmer day*/
 #define MAX_QUEUE_CAP 1024

@@ -4,7 +4,7 @@
 
 #include "lf_list.h"
 
-void zRPC_list_init(struct zRPC_list_state *l) {
+void zRPC_lfds_list_init(struct zRPC_lfds_list_state *l) {
     assert(l != NULL);
     assert((uintptr_t) &l->dummy_element % ZRPC_ATOM_ARCH_CACHELINE_IN_BYTES == 0);
     assert((uintptr_t) &l->end % ZRPC_ATOM_ARCH_CACHELINE_IN_BYTES == 0);
@@ -22,8 +22,8 @@ void zRPC_list_init(struct zRPC_list_state *l) {
     return;
 }
 
-void zRPC_list_insert_at_start(struct zRPC_list_state *l,
-                               struct zRPC_list_element *e) {
+void zRPC_lfds_list_insert_at_start(struct zRPC_lfds_list_state *l,
+                                    struct zRPC_lfds_list_element *e) {
     assert(l != NULL);
     assert(e != NULL);
     assert((uintptr_t) &e->next % ZRPC_ATOM_ARCH_ALIG_SINGLE_WORD_LENGTH == 0);
@@ -33,7 +33,7 @@ void zRPC_list_insert_at_start(struct zRPC_list_state *l,
     struct tagged_pointer ZRPC_ATOM_ARCH_ALIG_CACHELINE new_start;
     struct tagged_pointer ZRPC_ATOM_ARCH_ALIG_CACHELINE original_start;
 
-    original_start =  l->start;
+    original_start = l->start;
     new_start.ptr = e;
 
     do {
@@ -50,8 +50,8 @@ void zRPC_list_insert_at_start(struct zRPC_list_state *l,
     return;
 }
 
-void zRPC_list_insert_at_end(struct zRPC_list_state *l,
-                             struct zRPC_list_element *e) {
+void zRPC_lfds_list_insert_at_end(struct zRPC_lfds_list_state *l,
+                                  struct zRPC_lfds_list_element *e) {
     unsigned char result;
     unsigned char finished_flag = ZRPC_LFDS_FLAG_LOWERED;
     uintptr_t backoff_iteration = ZRPC_LFDS_BACKOFF_INITIAL_VALUE;
@@ -91,9 +91,9 @@ void zRPC_list_insert_at_end(struct zRPC_list_state *l,
     return;
 }
 
-void zRPC_list_insert_after_element(struct zRPC_list_state *l,
-                                    struct zRPC_list_element *e,
-                                    struct zRPC_list_element *e_pre) {
+void zRPC_lfds_list_insert_after_element(struct zRPC_lfds_list_state *l,
+                                         struct zRPC_lfds_list_element *e,
+                                         struct zRPC_lfds_list_element *e_pre) {
     unsigned char result;
     uintptr_t backoff_iteration = ZRPC_LFDS_BACKOFF_INITIAL_VALUE;
     assert(l != NULL);
@@ -118,12 +118,12 @@ void zRPC_list_insert_after_element(struct zRPC_list_state *l,
     return;
 }
 
-size_t zRPC_list_count(struct zRPC_list_state *l) {
-    struct zRPC_list_element *le = (struct zRPC_list_element *) l->start.ptr;
+size_t zRPC_lfds_list_count(struct zRPC_lfds_list_state *l) {
+    struct zRPC_lfds_list_element *le = (struct zRPC_lfds_list_element *) l->start.ptr;
     size_t count = 0;
     while (le->next.ptr != NULL) {
         ++count;
-        le = (struct zRPC_list_element *)(le->next.ptr);
+        le = (struct zRPC_lfds_list_element *) (le->next.ptr);
     }
     return count;
 }

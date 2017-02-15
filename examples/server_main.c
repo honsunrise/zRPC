@@ -7,6 +7,7 @@ int add(int a, int b) {
 }
 
 void warp_callee_add(void *param, zRPC_caller_instance *caller_instance, zRPC_call *call, zRPC_call_result *result) {
+    static volatile int i = 0;
     zRPC_value *a;
     zRPC_value *b;
     zRPC_call_get_param(call, "a", &a);
@@ -15,9 +16,11 @@ void warp_callee_add(void *param, zRPC_caller_instance *caller_instance, zRPC_ca
     (int) b->base_value->value.int64_value);
     zRPC_value *result_value
             = zRPC_type_var_create_base(PASS_PTR(zRPC_type_base_create(INT64, &add_result), zRPC_base_value));
+    result->request_id = call->request_id;
     zRPC_call_result_set_result(result, "function_ret", PASS_PTR(result_value, zRPC_value));
     SUB_REFERENCE(a, zRPC_value);
     SUB_REFERENCE(b, zRPC_value);
+    printf("%d add\n", i++);
 }
 
 typedef struct test_node {
