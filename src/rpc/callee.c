@@ -55,8 +55,8 @@ callee_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *msg,
         zRPC_call_result_create(&result);
         for (int i = 0; i < callee->function_count; ++i) {
             if (strcmp(callee->function_table[i].name, name) == 0) {
-                (callee->function_table[i].function_addr)(callee->function_table[i].param, custom_data->caller_instance, call,
-                                                          result);
+                (callee->function_table[i].function_addr)
+                        (callee->function_table[i].param, custom_data->caller_instance, call, result);
                 break;
             }
         }
