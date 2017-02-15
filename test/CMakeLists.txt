@@ -49,3 +49,8 @@ set(SOURCE_RESOLVER_FILES resolver_tests.cpp)
 add_executable(resolver-test ${SOURCE_RESOLVER_FILES})
 target_link_libraries(resolver-test zRPC gtest_main)
 add_test(NAME resolver-test COMMAND resolver-test)
+
+set(SOURCE_FILTER_FILES msgpack_filter_tests.cpp)
+add_executable(msgpack-test ${SOURCE_FILTER_FILES})
+target_link_libraries(msgpack-test zRPC gtest_main)
+add_test(NAME msgpack-test COMMAND msgpack-test)

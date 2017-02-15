@@ -88,6 +88,7 @@ void zRPC_call_result_destroy(zRPC_call_result *result) {
     if (result != NULL) {
         for (int i = 0; i < result->result_count; ++i) {
             free((void *) result->results[i].name);
+            SUB_REFERENCE(result->results[i].value, zRPC_value);
         }
         free(result->results);
         free(result);

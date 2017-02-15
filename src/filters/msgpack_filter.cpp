@@ -53,71 +53,50 @@ static inline msgpack::object zRPC_get_array(zRPC_value *value) {
     msgpack::object *array;
     msgpack::object ret;
     msgpack::object_array oa;
-    switch (value->array_value->type) {
-        case STR:
-            array = new msgpack::object[value->array_value->len];
-            for (int i = 0; i < value->array_value->len; ++i) {
-                array[i] = msgpack::object(value->array_value->value[i].str_value.str);
-            }
-            oa.ptr = array;
-            oa.size = (uint32_t) value->array_value->len;
-            ret.via.array = oa;
-            ret.type = msgpack::type::ARRAY;
-            break;
-        case INT64:
-            array = new msgpack::object[value->array_value->len];
-            for (int i = 0; i < value->array_value->len; ++i) {
-                array[i] = msgpack::object(value->array_value->value[i].int64_value);
-            }
-            oa.ptr = array;
-            oa.size = (uint32_t) value->array_value->len;
-            ret.via.array = oa;
-            ret.type = msgpack::type::ARRAY;
-            break;
-        case FLOAT:
-            array = new msgpack::object[value->array_value->len];
-            for (int i = 0; i < value->array_value->len; ++i) {
-                array[i] = msgpack::object(value->array_value->value[i].float_value);
-            }
-            oa.ptr = array;
-            oa.size = (uint32_t) value->array_value->len;
-            ret.via.array = oa;
-            ret.type = msgpack::type::ARRAY;
-            break;
-        case BYTE:
-        default:
-            array = new msgpack::object[value->array_value->len];
-            for (int i = 0; i < value->array_value->len; ++i) {
-                array[i] = msgpack::object(value->array_value->value[i].byte_value);
-            }
-            oa.ptr = array;
-            oa.size = (uint32_t) value->array_value->len;
-            ret.via.array = oa;
-            ret.type = msgpack::type::ARRAY;
-            break;
+    array = new msgpack::object[value->array_value->len];
+    for (int i = 0; i < value->array_value->len; ++i) {
+        switch (value->array_value->value[i]->type) {
+            case STR:
+                array[i] = msgpack::object(value->array_value->value[i]->str_value.str);
+                break;
+            case INT64:
+                array[i] = msgpack::object(value->array_value->value[i]->int64_value);
+                break;
+            case FLOAT:
+                array[i] = msgpack::object(value->array_value->value[i]->float_value);
+                break;
+            case BYTE:
+            default:
+                array[i] = msgpack::object(value->array_value->value[i]->byte_value);
+                break;
+        }
     }
+    oa.ptr = array;
+    oa.size = (uint32_t) value->array_value->len;
+    ret.via.array = oa;
+    ret.type = msgpack::type::ARRAY;
     SUB_REFERENCE(value, zRPC_value);
     return ret;
 };
 
-static msgpack::object zRPC_base_value_to_msgpack_value(zRPC_base_value *value) {
+static msgpack::object zRPC_base_value_to_msgpack_value(zRPC_value *value) {
     msgpack::object ret;
     switch (value->type) {
         case INT64:
-            ret = msgpack::object(value->value.int64_value);
-            SUB_REFERENCE(value, zRPC_base_value);
+            ret = msgpack::object(value->int64_value);
+            SUB_REFERENCE(value, zRPC_value);
             break;
         case FLOAT:
-            ret = msgpack::object(value->value.float_value);
-            SUB_REFERENCE(value, zRPC_base_value);
+            ret = msgpack::object(value->float_value);
+            SUB_REFERENCE(value, zRPC_value);
             break;
         case STR:
-            ret = msgpack::object(zRPC_str_dup(value->value.str_value.str));
-            SUB_REFERENCE(value, zRPC_base_value);
+            ret = msgpack::object(zRPC_str_dup(value->str_value.str));
+            SUB_REFERENCE(value, zRPC_value);
             break;
         default:
-            ret = msgpack::object(value->value.int64_value);
-            SUB_REFERENCE(value, zRPC_base_value);
+            ret = msgpack::object(value->int64_value);
+            SUB_REFERENCE(value, zRPC_value);
             break;
     }
     return ret;
@@ -130,8 +109,8 @@ static inline msgpack::object zRPC_get_map(zRPC_value *value) {
     entities = new msgpack::object_kv[value->map_value->len];
     for (int i = 0; i < value->map_value->len; ++i) {
         entities[i] = msgpack::object_kv();
-        entities[i].key = zRPC_base_value_to_msgpack_value(PASS_PTR(value->map_value->value[i].key, zRPC_base_value));
-        entities[i].val = zRPC_base_value_to_msgpack_value(PASS_PTR(value->map_value->value[i].value, zRPC_base_value));
+        entities[i].key = zRPC_base_value_to_msgpack_value(PASS_PTR(value->map_value->value[i].key, zRPC_value));
+        entities[i].val = zRPC_base_value_to_msgpack_value(PASS_PTR(value->map_value->value[i].value, zRPC_value));
     }
     om.ptr = entities;
     om.size = (uint32_t) value->map_value->len;
@@ -143,7 +122,6 @@ static inline msgpack::object zRPC_get_map(zRPC_value *value) {
 
 static msgpack::object zRPC_value_to_msgpack_value(zRPC_value *value) {
     zRPC_value *value_pass;
-    zRPC_base_value *value_pass_base;
     switch (value->type) {
         case ARRAY:
             value_pass = PASS_PTR(value, zRPC_value);
@@ -153,64 +131,71 @@ static msgpack::object zRPC_value_to_msgpack_value(zRPC_value *value) {
             value_pass = PASS_PTR(value, zRPC_value);
             SUB_REFERENCE(value, zRPC_value);
             return zRPC_get_map(value_pass);
-        case BASE:
         default:
-            value_pass_base = PASS_PTR(value, zRPC_value)->base_value;
+            value_pass = PASS_PTR(value, zRPC_value);
             SUB_REFERENCE(value, zRPC_value);
-            return zRPC_base_value_to_msgpack_value(value_pass_base);
+            return zRPC_base_value_to_msgpack_value(value_pass);
     }
 }
 
 static inline zRPC_value *zRPC_get_zRPC_array(msgpack::object_array *array_value) {
     zRPC_value *ret_array;
-    std::string str;
+    std::string str_v;
+    int8_t byte_v;
+    int64_t int64_v;
+    float float_v;
     switch (array_value->ptr->type) {
         case msgpack::type::NEGATIVE_INTEGER:
-            ret_array = zRPC_type_var_create_array(INT64, array_value->size);
+            ret_array = zRPC_type_var_create_array(array_value->size);
             for (int i = 0; i < array_value->size; ++i) {
-                ret_array->array_value->value[i].int64_value = array_value->ptr[i].convert();
+                int64_v = array_value->ptr[i].convert();
+                ret_array->array_value->value[i] =
+                        zRPC_type_var_create_base(INT64, &int64_v);
             }
             return ret_array;
         case msgpack::type::FLOAT :
-            ret_array = zRPC_type_var_create_array(FLOAT, array_value->size);
+            ret_array = zRPC_type_var_create_array(array_value->size);
             for (int i = 0; i < array_value->size; ++i) {
-                ret_array->array_value->value[i].float_value = array_value->ptr[i].convert();
+                float_v = array_value->ptr[i].convert();
+                ret_array->array_value->value[i] =
+                        zRPC_type_var_create_base(FLOAT, &float_v);
             }
             return ret_array;
         case msgpack::type::STR:
-            ret_array = zRPC_type_var_create_array(STR, array_value->size);
+            ret_array = zRPC_type_var_create_array(array_value->size);
             for (int i = 0; i < array_value->size; ++i) {
-                array_value->ptr[i].convert(str);
-                ret_array->array_value->value[i].str_value = zRPC_type_create_str(str.c_str());
+                array_value->ptr[i].convert(str_v);
+                ret_array->array_value->value[i] = zRPC_type_var_create_base(STR, (void *) str_v.c_str());
             }
             return ret_array;
         default:
-            ret_array = zRPC_type_var_create_array(BYTE, array_value->size);
+            ret_array = zRPC_type_var_create_array(array_value->size);
             for (int i = 0; i < array_value->size; ++i) {
-                ret_array->array_value->value[i].byte_value = array_value->ptr[i].convert();
+                byte_v = array_value->ptr[i].convert();
+                ret_array->array_value->value[i] = zRPC_type_var_create_base(BYTE, &byte_v);
             }
             return ret_array;
     }
 };
 
-static zRPC_base_value *msgpack_value_to_zRPC_base_value(msgpack::object value) {
-    zRPC_base_value *ret_value;
+static zRPC_value *msgpack_value_to_zRPC_base_value(msgpack::object value) {
+    zRPC_value *ret_value;
     std::string str;
     float f_v;
     int64_t int_v;
     switch (value.type) {
         case msgpack::type::FLOAT:
             f_v = value.convert();
-            ret_value = zRPC_type_base_create(FLOAT, &f_v);
+            ret_value = zRPC_type_var_create_base(FLOAT, &f_v);
             break;
         case msgpack::type::STR:
             value.convert(str);
-            ret_value = zRPC_type_base_create(STR, str.c_str());
+            ret_value = zRPC_type_var_create_base(STR, (void *) str.c_str());
             break;
         case msgpack::type::NEGATIVE_INTEGER:
         default:
             int_v = value.convert();
-            ret_value = zRPC_type_base_create(INT64, &int_v);
+            ret_value = zRPC_type_var_create_base(INT64, &int_v);
             break;
     }
     return ret_value;
@@ -219,10 +204,8 @@ static zRPC_base_value *msgpack_value_to_zRPC_base_value(msgpack::object value) 
 static inline zRPC_value *zRPC_get_zRPC_map(msgpack::object_map *map_value) {
     zRPC_value *ret_value = zRPC_type_var_create_map(map_value->size);
     for (int i = 0; i < map_value->size; ++i) {
-        ret_value->map_value->value[i].key
-                = PASS_PTR(msgpack_value_to_zRPC_base_value(map_value->ptr[i].key), zRPC_base_value);
-        ret_value->map_value->value[i].value
-                = PASS_PTR(msgpack_value_to_zRPC_base_value(map_value->ptr[i].val), zRPC_base_value);
+        ret_value->map_value->value[i].key = msgpack_value_to_zRPC_base_value(map_value->ptr[i].key);
+        ret_value->map_value->value[i].value = msgpack_value_to_zRPC_base_value(map_value->ptr[i].val);
     }
     return ret_value;
 };
@@ -238,7 +221,7 @@ static zRPC_value *msgpack_value_to_zRPC_value(msgpack::object value) {
             ret_value = zRPC_get_zRPC_map(&value.via.map);
             break;
         default:
-            ret_value = zRPC_type_var_create_base(msgpack_value_to_zRPC_base_value(value));
+            ret_value = msgpack_value_to_zRPC_base_value(value);
             break;
     }
     return ret_value;
@@ -393,6 +376,7 @@ msgpack_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg
     zRPC_bytes_buf *buf;
     package(msg, &buf);
     zRPC_filter_out_add_item(out, PASS_PTR(buf, zRPC_bytes_buf));
+    SUB_REFERENCE(buf, zRPC_bytes_buf);
 }
 
 
@@ -413,7 +397,7 @@ static zRPC_filter *msgpack_filter_create(void *factory_custom) {
 zRPC_filter_factory *msgpack_filter_factory_instance = NULL;
 
 zRPC_filter_factory *msgpack_filter_factory() {
-    if(msgpack_filter_factory_instance == NULL) {
+    if (msgpack_filter_factory_instance == NULL) {
         msgpack_filter_factory_instance = zRPC_filter_factory_create(msgpack_filter_create, NULL);
     }
     return msgpack_filter_factory_instance;

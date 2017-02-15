@@ -339,10 +339,11 @@ static void help_call_write_filter(zRPC_filter_linked_node *filter, zRPC_channel
     for (unsigned int i = 0; i < zRPC_filter_out_item_count(out); ++i) {
         if (filter->prev == NULL) {
             zRPC_channel_really_write(channel, out);
-            return;
+            goto done;
         }
         help_call_write_filter(filter->prev, channel, zRPC_filter_out_get_item(out, i));
     }
+    done:
     zRPC_filter_out_destroy(out);
 }
 

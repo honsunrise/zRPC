@@ -61,8 +61,7 @@ litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void 
         if (read == 0)
             return;
         if (read == custom->remainder) {
-            zRPC_filter_out_add_item(out, PASS_PTR(package->body, zRPC_bytes_buf));
-            SUB_REFERENCE(package->body, zRPC_bytes_buf);
+            zRPC_filter_out_add_item(out, package->body);
             package->body = NULL;
             custom->new_package = 1;
             custom->header_remainder = sizeof(lite_package_header);
@@ -77,6 +76,7 @@ litepackage_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void 
 void
 litepackage_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     zRPC_bytes_buf *buf = (zRPC_bytes_buf *) msg;
+
     zRPC_bytes_buf *buf_out;
     size_t header_len = sizeof(lite_package_header);
     zRPC_bytes_buf_create(header_len + zRPC_bytes_buf_len(buf), &buf_out);
@@ -84,13 +84,9 @@ litepackage_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void 
     package_header.len = (int32_t) zRPC_bytes_buf_len(buf);
     memcpy(zRPC_bytes_buf_addr(buf_out), &package_header, header_len);
     memcpy((char *) zRPC_bytes_buf_addr(buf_out) + header_len, zRPC_bytes_buf_addr(buf), zRPC_bytes_buf_len(buf));
-    zRPC_filter_out_add_item(out, PASS_PTR(buf_out, zRPC_bytes_buf));
-    SUB_REFERENCE(buf, zRPC_bytes_buf);
-    SUB_REFERENCE(buf_out, zRPC_bytes_buf);
-}
+    zRPC_filter_out_add_item(out, buf_out);
 
-void
-litepackage_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
+    SUB_REFERENCE(buf, zRPC_bytes_buf);
 }
 
 static zRPC_filter *litepackage_filter_create(void *fatory_custom) {

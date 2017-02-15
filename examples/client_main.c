@@ -11,9 +11,9 @@
 int caller_add(zRPC_caller *caller, zRPC_client *client, int64_t a, int64_t b, int64_t *ret) {
     zRPC_call_param *params = malloc(sizeof(zRPC_call_param) * 2);
     params[0].name = "a";
-    params[0].value = zRPC_type_var_create_base(zRPC_type_base_create(INT64, &a));
+    params[0].value = zRPC_type_var_create_base(INT64, &a);
     params[1].name = "b";
-    params[1].value = zRPC_type_var_create_base(zRPC_type_base_create(INT64, &b));
+    params[1].value = zRPC_type_var_create_base(INT64, &b);
     zRPC_call *call = zRPC_caller_do_call(caller, client, "add", params, 2);
     zRPC_call_result *result;
     zRPC_caller_wait_result(caller, call, &result);
@@ -22,7 +22,7 @@ int caller_add(zRPC_caller *caller, zRPC_client *client, int64_t a, int64_t b, i
     zRPC_call_result_get_param(result, "function_ret", &value);
     zRPC_caller_destroy_result(caller, result);
     free(params);
-    *ret = value->base_value->value.int64_value;
+    *ret = value->int64_value;
     return *ret;
 }
 

@@ -12,10 +12,8 @@ void warp_callee_add(void *param, zRPC_caller_instance *caller_instance, zRPC_ca
     zRPC_value *b;
     zRPC_call_get_param(call, "a", &a);
     zRPC_call_get_param(call, "b", &b);
-    int64_t add_result = add((int) a->base_value->value.int64_value,
-    (int) b->base_value->value.int64_value);
-    zRPC_value *result_value
-            = zRPC_type_var_create_base(PASS_PTR(zRPC_type_base_create(INT64, &add_result), zRPC_base_value));
+    int64_t add_result = add((int) a->int64_value, (int) b->int64_value);
+    zRPC_value *result_value = PASS_PTR(zRPC_type_var_create_base(INT64, &add_result), zRPC_value);
     result->request_id = call->request_id;
     zRPC_call_result_set_result(result, "function_ret", PASS_PTR(result_value, zRPC_value));
     SUB_REFERENCE(a, zRPC_value);
