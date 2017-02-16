@@ -79,7 +79,7 @@ static zRPC_filter *rpc_filter_create(void *factory_custom) {
     struct zRPC_call_stub_filter_custom_data *custom_data = malloc(sizeof(struct zRPC_call_stub_filter_custom_data));
     struct rpc_filter_factory_param *param = factory_custom;
     zRPC_mutex_init(&custom_data->mutex);
-    custom_data->calling_map = hashmapCreate(1000, int_hash_function, equals);
+    custom_data->calling_map = hashmapCreate(1024, int_hash_function, equals);
     custom_data->function = param->function;
     custom_data->param = param->param;
     zRPC_filter_create(&filter, custom_data);

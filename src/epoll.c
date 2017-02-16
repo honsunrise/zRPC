@@ -4,6 +4,7 @@
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <zRPC/ds/hashmap.h>
 #include "zRPC/context.h"
 
 static void *initialize(zRPC_context *);
@@ -16,13 +17,18 @@ static int dispatch(zRPC_context *, zRPC_timespec *ts);
 
 static void uninitialize(zRPC_context *);
 
+static int int_hash_function(void *key) {
+    return (int)(key);
+}
+
+static int equals(void* keyA, void* keyB) {
+    return keyA == keyB;
+}
+
 typedef struct zRPC_epoll_context {
     zRPC_context *context;
     int ep_fd;
-    struct epoll_event *ep_evs;
-    size_t ep_evs_cap;
-    size_t ep_evs_num;
-    int ep_events;
+    zRPC_hashmap *ep_evs;
 } zRPC_epoll_context;
 
 const zRPC_event_engine_vtable epoll_event_engine_vtable = {
@@ -39,53 +45,46 @@ static void *initialize(zRPC_context *context) {
     zRPC_epoll_context *epoll_context = malloc(sizeof(zRPC_epoll_context));
     epoll_context->context = context;
     epoll_context->ep_fd = epoll_create1(EPOLL_CLOEXEC);
-    epoll_context->ep_evs_cap = 32;
-    epoll_context->ep_evs = malloc(sizeof(struct epoll_event) * epoll_context->ep_evs_cap);
-    epoll_context->ep_evs_num = 0;
+    epoll_context->ep_evs = hashmapCreate(1024, int_hash_function, equals);
     return epoll_context;
 }
 
 static void uninitialize(zRPC_context *context) {
     if (context->event_engine_context) {
-        free(((zRPC_epoll_context*)context->event_engine_context)->ep_evs);
+        hashmapFree(((zRPC_epoll_context*)context->event_engine_context)->ep_evs);
+        close(((zRPC_epoll_context*)context->event_engine_context)->ep_fd);
         free(context->event_engine_context);
     }
 }
 
 static int add(zRPC_context *context, zRPC_event *event) {
     zRPC_epoll_context *epoll_context = context->event_engine_context;
-    if (epoll_context->ep_evs_num >= epoll_context->ep_evs_cap) {
-        size_t new_size = epoll_context->ep_evs_cap * 2;
-        struct epoll_event *new_ep_evs = realloc(epoll_context->ep_evs, new_size * sizeof(struct epoll_event));
-        if (new_ep_evs == NULL) {
-            return -1;
-        }
-        epoll_context->ep_evs = new_ep_evs;
-        epoll_context->ep_evs_cap = new_size;
-    }
     if (!(event->event_status & EVS_INIT)) {
         return -1;
     }
-    epoll_context->ep_evs[epoll_context->ep_evs_num].data.ptr = event;
-    epoll_context->ep_evs[epoll_context->ep_evs_num].events = EPOLLET;
-    if (event->event_type & EV_WRITE) {
-        epoll_context->ep_evs[epoll_context->ep_evs_num].events |= EPOLLOUT;
-    }
-    if (event->event_type & EV_READ) {
-        epoll_context->ep_evs[epoll_context->ep_evs_num].events |= EPOLLIN;
+    struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd));
+    if (evs == NULL) {
+        evs = malloc(sizeof(struct epoll_event));
+        evs->data.ptr = event->fd;
+        evs->events = EPOLLET;
+        if (event->event_type & EV_WRITE) {
+            evs->events |= EPOLLOUT;
+        }
+        if (event->event_type & EV_READ) {
+            evs->events |= EPOLLIN;
+        }
+        hashmapPut(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd), evs);
+        epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd), evs);
+    } else {
+        if (event->event_type & EV_WRITE) {
+            evs->events |= EPOLLOUT;
+        }
+        if (event->event_type & EV_READ) {
+            evs->events |= EPOLLIN;
+        }
+        epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, zRPC_fd_origin(event->fd), evs);
     }
     event->event_status = EVS_REGISTER;
-    event->event_info = malloc(sizeof(int));
-    if (event->event_info == NULL) {
-        return -1;
-    }
-    *(int *) event->event_info = (int) epoll_context->ep_evs_num;
-    int err = epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd),
-              &epoll_context->ep_evs[epoll_context->ep_evs_num]);
-    if (err == EEXIST) {
-
-    }
-    ++epoll_context->ep_evs_num;
     return 0;
 }
 
@@ -94,14 +93,13 @@ static int del(zRPC_context *context, zRPC_event *event) {
     if (!(event->event_status & EVS_REGISTER)) {
         return -1;
     }
-    int ep_evs_index = *(int *) event->event_info;
-    struct epoll_event *e_v = &epoll_context->ep_evs[ep_evs_index];
+    struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd));
     if (event->event_type & EV_READ)
-        e_v->events &= ~EPOLLIN;
+        evs->events &= ~EPOLLIN;
     if (event->event_type & EV_WRITE)
-        e_v->events &= ~EPOLLOUT;
-    if (e_v->events & (EPOLLIN | EPOLLOUT)) {
-        epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, zRPC_fd_origin(event->fd), e_v);
+        evs->events &= ~EPOLLOUT;
+    if (evs->events & (EPOLLIN | EPOLLOUT)) {
+        epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, zRPC_fd_origin(event->fd), evs);
         return 0;
     } else {
         epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, zRPC_fd_origin(event->fd), NULL);
@@ -118,8 +116,7 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
     struct pollfd *event_set;
     int ep_rv = epoll_wait(epoll_context->ep_fd, events, MAX_EVENTS, zRPC_time_to_millis(*ts));
     for (int i = 0; i < ep_rv; ++i) {
-        void *data_ptr = events[i].data.ptr;
-        zRPC_event *event = data_ptr;
+        zRPC_fd *fd = events[i].data.ptr;
         int cancel = events[i].events & (EPOLLERR | EPOLLHUP);
         int read_ev = events[i].events & (EPOLLIN | EPOLLPRI);
         int write_ev = events[i].events & EPOLLOUT;
@@ -133,7 +130,7 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
         if (res == 0) {
             continue;
         }
-        zRPC_context_fd_event_happen(context, event->fd, res);
+        zRPC_context_fd_event_happen(context, fd, res);
     }
     return (0);
 }

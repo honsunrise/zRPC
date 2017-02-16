@@ -90,10 +90,10 @@ void zRPC_context_fd_event_happen(zRPC_context *context, zRPC_fd *fd, int res) {
     zRPC_list_head *pos;
     zRPC_list_for_each(pos, &context->event_register) {
         event = zRPC_list_entry(pos, zRPC_event, list_node_register);
-        if (event->event_status == EVS_REGISTER && event->fd == fd) {
+        if (event->event_status == EVS_REGISTER && event->fd == fd && event->event_type & res) {
             break;
         } else {
-            if (event->fd == fd) {
+            if (event->fd == fd && event->event_type & res) {
                 zRPC_pending_event *pending_event = malloc(sizeof(zRPC_pending_event));
                 pending_event->event = event;
                 pending_event->event_happen = res;

@@ -67,7 +67,7 @@ int test_client_thread(void *arg) {
         int a = rand() % 100;
         int b = rand() % 100;
         int64_t result;
-        //int ret = caller_add(caller, a, b, &result);
+        int ret = caller_add(caller, a, b, &result);
         printf("%d add %d + %d result: %ld\n", i++, a, b, result);
     }
     return 0;
