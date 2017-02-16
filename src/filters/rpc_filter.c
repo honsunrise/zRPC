@@ -49,11 +49,16 @@ void rpc_filter_on_readable(zRPC_filter *filter, zRPC_channel *channel, void *ms
 
 void rpc_filter_on_writable(zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
     struct zRPC_call_stub_filter_custom_data *custom_data = zRPC_filter_get_custom_data(filter);
-    zRPC_call *call = msg;
-    zRPC_mutex_lock(&custom_data->mutex);
-    hashmapPut(custom_data->calling_map, (void *) call->request_id, call);
-    zRPC_mutex_unlock(&custom_data->mutex);
-    zRPC_filter_out_add_item(out, call);
+    IF_TYPE_SAME(zRPC_call_result, msg) {
+        zRPC_call_result *call_result = msg;
+        zRPC_filter_out_add_item(out, call_result);
+    } ELSE_IF_TYPE_SAME (zRPC_call, msg) {
+        zRPC_call *call = msg;
+        zRPC_mutex_lock(&custom_data->mutex);
+        hashmapPut(custom_data->calling_map, (void *) call->request_id, call);
+        zRPC_mutex_unlock(&custom_data->mutex);
+        zRPC_filter_out_add_item(out, call);
+    }
 }
 
 void rpc_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
