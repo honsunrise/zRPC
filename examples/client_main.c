@@ -8,7 +8,7 @@
 #include <zRPC/client.h>
 #include <zRPC/rpc/call_stub.h>
 
-int caller_add(zRPC_call_stub *call_stub, int64_t a, int64_t b, int64_t *ret) {
+void caller_add(zRPC_call_stub *call_stub, int64_t a, int64_t b, int64_t *ret) {
     zRPC_call_param *params = malloc(sizeof(zRPC_call_param) * 2);
     params[0].name = "a";
     params[0].value = zRPC_type_var_create_base(INT64, &a);
@@ -24,7 +24,6 @@ int caller_add(zRPC_call_stub *call_stub, int64_t a, int64_t b, int64_t *ret) {
     free(params);
     *ret = value->int64_value;
     SUB_REFERENCE(value, zRPC_value);
-    return *ret;
 }
 
 typedef struct thread_param {
@@ -33,8 +32,6 @@ typedef struct thread_param {
 
 int test_client_thread(void *arg) {
     thread_param *param = arg;
-
-    sleep(1);
 
     zRPC_function_table_item function_table_callee[] = {
     };
@@ -60,14 +57,14 @@ int test_client_thread(void *arg) {
     /*Client start*/
     zRPC_client_start(client);
 
-    sleep(3);
+    sleep(2);
 
     volatile int i = 0;
     for (;;) {
         int a = rand() % 100;
         int b = rand() % 100;
         int64_t result;
-        int ret = caller_add(caller, a, b, &result);
+        caller_add(caller, a, b, &result);
         printf("%d add %d + %d result: %ld\n", i++, a, b, result);
     }
     return 0;
