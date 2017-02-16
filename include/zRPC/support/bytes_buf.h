@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include "ref_count.h"
 
 typedef struct zRPC_bytes_buf zRPC_bytes_buf;
