@@ -32,7 +32,7 @@ struct reference_struct_t {
 #define DECLARE_REFERENCE_FUN(type) \
     zRPC_atom __##type##__add_ref__(struct type *ptr); \
     zRPC_atom __##type##__sub_ref__(struct type *ptr); \
-    type *__##type##__pass_ref__(struct type *ptr);
+    struct type *__##type##__pass_ref__(struct type *ptr);
 
 #define DEFINE_REFERENCE_FUN(type) \
     zRPC_atom __##type##__add_ref__(struct type *ptr) { \
@@ -44,7 +44,7 @@ struct reference_struct_t {
         } \
         return ZRPC_ATOM_ACQUIRE_LOAD(&ptr->__ref__.count); \
     } \
-    type *__##type##__pass_ref__(struct type *ptr) { \
+    struct type *__##type##__pass_ref__(struct type *ptr) { \
         ZRPC_ATOM_FULL_ADD_FETCH(&ptr->__ref__.count, 1); \
         return ptr; \
     }
