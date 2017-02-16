@@ -8,15 +8,15 @@
 #include <zRPC/client.h>
 #include <zRPC/rpc/call_stub.h>
 
-void caller_add(zRPC_call_stub *call_stub, int64_t a, int64_t b, int64_t *ret) {
+void caller_add(zRPC_channel *channel, int64_t a, int64_t b, int64_t *ret) {
     zRPC_call_param *params = malloc(sizeof(zRPC_call_param) * 2);
     params[0].name = "a";
     params[0].value = zRPC_type_var_create_base(INT64, &a);
     params[1].name = "b";
     params[1].value = zRPC_type_var_create_base(INT64, &b);
-    zRPC_call *call = zRPC_call_stub_do_call(call_stub, "add", params, 2);
+    zRPC_call *call = zRPC_call_do_call(channel, "add", params, 2);
     zRPC_call_result *result;
-    zRPC_call_stub_wait_result(call, &result);
+    zRPC_call_wait_result(call, &result);
     zRPC_call_destroy(call);
     zRPC_value *value;
     zRPC_call_result_get_param(result, "function_ret", &value);
@@ -55,7 +55,7 @@ int test_client_thread(void *arg) {
     zRPC_client *client = zRPC_client_create(param->context, "127.0.0.1:50000", client_pipe);
 
     /*Client start*/
-    zRPC_client_start(client);
+    zRPC_client_connect(client);
 
     sleep(2);
 
@@ -64,7 +64,7 @@ int test_client_thread(void *arg) {
         int a = rand() % 100;
         int b = rand() % 100;
         int64_t result;
-        caller_add(caller, a, b, &result);
+        caller_add(zRPC_client_get_channel(client), a, b, &result);
         printf("%d add %d + %d result: %ld\n", i++, a, b, result);
     }
     return 0;

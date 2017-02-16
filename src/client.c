@@ -35,7 +35,7 @@ static void resolver_complete_callback(void *custom_arg, zRPC_resolved *resolved
     }
 }
 
-void zRPC_client_start(zRPC_client *client) {
+void zRPC_client_connect(zRPC_client *client) {
     zRPC_resolver_address(client->context, client->hostname, resolver_complete_callback, client);
 }
 
@@ -43,8 +43,8 @@ zRPC_pipe *zRPC_client_get_pipe(zRPC_client *client) {
     return client->pipe;
 }
 
-void zRPC_client_write(zRPC_client *client, void *msg) {
-    zRPC_channel_write(client->channel, msg);
+zRPC_channel *zRPC_client_get_channel(zRPC_client *client) {
+    return client->channel;
 }
 
 zRPC_context *zRPC_client_get_context(zRPC_client *client) {

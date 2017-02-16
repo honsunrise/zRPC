@@ -18,14 +18,9 @@ void zRPC_call_stub_create(zRPC_call_stub **out, zRPC_function_table_item *funct
 
 void zRPC_call_stub_destroy(zRPC_call_stub *caller);
 
-void zRPC_call_stub_get_filters(zRPC_call_stub *caller, zRPC_filter_factory ***filters, int *count);
+void zRPC_call_stub_get_filters(zRPC_call_stub *call_stub, zRPC_filter_factory ***filters, int *count);
 
-void zRPC_call_stub_add_filter(zRPC_call_stub *caller, zRPC_filter_factory *filter);
-
-zRPC_call *zRPC_call_stub_do_call(zRPC_call_stub *caller, const char *name, zRPC_call_param *params, int count);
-
-void zRPC_call_stub_wait_result(zRPC_call *call, zRPC_call_result **result);
-
+void zRPC_call_stub_add_filter(zRPC_call_stub *call_stub, zRPC_filter_factory *filter);
 #ifdef __cplusplus
 }
 #endif

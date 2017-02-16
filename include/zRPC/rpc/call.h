@@ -45,9 +45,6 @@ typedef struct zRPC_call {
 
 typedef struct zRPC_caller_instance {
     zRPC_channel *channel;
-    zRPC_cond cond;
-    zRPC_mutex mutex;
-    zRPC_call_result *result;
 } zRPC_caller_instance;
 
 typedef struct zRPC_function_table_item {
@@ -81,6 +78,10 @@ void zRPC_call_result_set_result(zRPC_call_result *result, const char *name, zRP
 void zRPC_call_result_get_param(zRPC_call_result *result, const char *name, zRPC_value **value);
 
 void zRPC_call_result_get_results(zRPC_call_result *result, zRPC_call_param **results, unsigned int *count);
+
+zRPC_call *zRPC_call_do_call(zRPC_channel *channel, const char *name, zRPC_call_param *params, int count);
+
+void zRPC_call_wait_result(zRPC_call *call, zRPC_call_result **result);
 
 #ifdef __cplusplus
 }

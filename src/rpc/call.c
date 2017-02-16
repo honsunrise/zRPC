@@ -123,3 +123,26 @@ void zRPC_call_result_get_results(zRPC_call_result *result, zRPC_call_param **re
     *results = result->results;
     *count = result->result_count;
 }
+
+
+zRPC_call *zRPC_call_do_call(zRPC_channel *channel, const char *name, zRPC_call_param *params, int count) {
+    static int request_id = 0;
+    zRPC_call *call;
+    zRPC_call_create(&call);
+    call->request_id = request_id++;
+    zRPC_call_set_function(call, name);
+    for (int i = 0; i < count; ++i) {
+        zRPC_call_set_param(call, params[i].name, PASS_PTR(params[i].value, zRPC_value));
+    }
+    zRPC_channel_write(channel, call);
+    return call;
+}
+
+void zRPC_call_wait_result(zRPC_call *call, zRPC_call_result **result) {
+    zRPC_call_result *ret = NULL;
+    do {
+        zRPC_sem_wait(&call->sem);
+        ret = call->result;
+    } while (ret == NULL);
+    *result = ret;
+}
