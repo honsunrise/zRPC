@@ -23,6 +23,14 @@ typedef struct zRPC_call_param {
     zRPC_value *value;
 } zRPC_call_param;
 
+typedef struct zRPC_call_result {
+    DECLARE_RTTI(zRPC_call_result);
+    int request_id;
+    unsigned int result_count;
+    unsigned int result_cab;
+    zRPC_call_param *results;
+} zRPC_call_result;
+
 typedef struct zRPC_call {
     DECLARE_RTTI(zRPC_call);
     int request_id;
@@ -31,16 +39,9 @@ typedef struct zRPC_call {
     unsigned int param_count;
     unsigned int param_cab;
     zRPC_call_param *params;
+    zRPC_call_result *result;
     zRPC_sem sem;
 } zRPC_call;
-
-typedef struct zRPC_call_result {
-    DECLARE_RTTI(zRPC_call_result);
-    int request_id;
-    unsigned int result_count;
-    unsigned int result_cab;
-    zRPC_call_param *results;
-} zRPC_call_result;
 
 typedef struct zRPC_caller_instance {
     zRPC_channel *channel;

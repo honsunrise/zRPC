@@ -69,6 +69,7 @@ int zRPC_context_register_event(zRPC_context *context, zRPC_event *event) {
         context->event_engine->add(context, event);
     }
     zRPC_list_add_tail(&event->list_node_register, &context->event_register);
+    zRPC_context_notify(context);
     return 0;
 }
 
@@ -80,6 +81,7 @@ int zRPC_context_unregister_event(zRPC_context *context, zRPC_event *event) {
         context->event_engine->del(context, event);
     }
     zRPC_list_del(&event->list_node_register);
+    zRPC_context_notify(context);
     return 0;
 }
 

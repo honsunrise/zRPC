@@ -31,11 +31,13 @@ zRPC_timer *zRPC_timer_schedule_now(zRPC_context *context, zRPC_timespec deadlin
     if (!context->timer_holder->initialized) {
         timer->triggered = 1;
         zRPC_context_timer_event_happen(context, timer, EV_TIMER);
+        zRPC_context_notify(context);
         return timer;
     }
     if (zRPC_time_cmp(deadline, now) <= 0) {
         timer->triggered = 1;
         zRPC_context_timer_event_happen(context, timer, EV_TIMER);
+        zRPC_context_notify(context);
         return timer;
     }
     zRPC_mutex_lock(&context->timer_holder->mutex);

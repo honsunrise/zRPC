@@ -1,6 +1,6 @@
-#include "zRPC/context.h"
-#include "zRPC/server.h"
-#include "zRPC/rpc/callee.h"
+#include <zRPC/rpc/call.h>
+#include <zRPC/rpc/call_stub.h>
+#include <zRPC/server.h>
 
 int add(int a, int b) {
     return a + b;
@@ -36,23 +36,21 @@ int main(int argc, char **argv) {
     /*Init context*/
     zRPC_context *context = zRPC_context_create();
 
-    /*Init callee*/
-    zRPC_callee *callee;
-    zRPC_callee_create(&callee, NULL);
-
     zRPC_function_table_item function_table_callee[] = {
             {"add", NULL, warp_callee_add}
     };
 
-    zRPC_callee_set_function_table(callee, function_table_callee,
-                                   sizeof(function_table_callee) / sizeof(*function_table_callee));
-    /*Init pipe*/
+    /*Init callee*/
+    zRPC_call_stub *callee;
+    zRPC_call_stub_create(&callee,
+                          function_table_callee, sizeof(function_table_callee) / sizeof(*function_table_callee));
 
+    /*Init pipe*/
     zRPC_pipe *server_pipe;
     zRPC_pipe_create(&server_pipe);
     zRPC_filter_factory **filters;
     int filter_count;
-    zRPC_callee_get_filters(callee, &filters, &filter_count);
+    zRPC_call_stub_get_filters(callee, &filters, &filter_count);
     for (int i = 0; i < filter_count; ++i) {
         zRPC_pipe_add_filter(server_pipe, filters[i]);
     }

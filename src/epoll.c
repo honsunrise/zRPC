@@ -80,8 +80,11 @@ static int add(zRPC_context *context, zRPC_event *event) {
         return -1;
     }
     *(int *) event->event_info = (int) epoll_context->ep_evs_num;
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd),
+    int err = epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd),
               &epoll_context->ep_evs[epoll_context->ep_evs_num]);
+    if (err == EEXIST) {
+
+    }
     ++epoll_context->ep_evs_num;
     return 0;
 }

@@ -116,7 +116,7 @@ zRPC_channel *zRPC_tcp_client_start(zRPC_tcp_client *tcp_client) {
 
     zRPC_event *event = zRPC_event_fd_create(fd, EV_READ | EV_PERSIST, on_read, NULL);
     zRPC_context_register_event(zRPC_client_get_context(client), event);
-    event = zRPC_event_fd_create(fd, EV_WRITE, NULL, on_write);
+     event = zRPC_event_fd_create(fd, EV_WRITE, NULL, on_write);
     zRPC_context_register_event(zRPC_client_get_context(client), event);
 
     done:

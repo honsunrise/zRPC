@@ -121,10 +121,10 @@ void zRPC_resolver_address(zRPC_context *context, const char *name, zRPC_resolve
     zRPC_resolved_param *param = malloc(sizeof(zRPC_resolved_param));
     param->resolved = resolved;
     param->context = context;
+    resolved->complete_callback = zRPC_runnable_create((void *(*)(void *)) complete_runnable, resolved,
+                                                       zRPC_runnable_release_callback);
     zRPC_runnable *runnable = zRPC_runnable_create((void *(*)(void *)) zRPC_on_timer_retry, param,
                                                    zRPC_runnable_release_callback);
     resolved->retry_timer = zRPC_timer_schedule(context, deadline, runnable);
-    resolved->complete_callback = zRPC_runnable_create((void *(*)(void *)) complete_runnable, resolved,
-                                                       zRPC_runnable_release_callback);
     ++context->resolved_holder->resolved_count;
 }
