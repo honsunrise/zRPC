@@ -38,7 +38,7 @@ typedef struct zRPC_map_value {
     size_t len;
 } zRPC_map_value;
 
-typedef struct zRPC_value {
+struct zRPC_value {
     DECLARE_REFERENCE;
     zRPC_TYPE type;
     union {
@@ -53,7 +53,7 @@ typedef struct zRPC_value {
         zRPC_array_value *array_value;
         zRPC_map_value *map_value;
     };
-} zRPC_value;
+};
 
 DECLARE_REFERENCE_FUN(zRPC_value)
 
