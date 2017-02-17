@@ -12,11 +12,11 @@ struct zRPC_runnable {
     void *(*run)(void *);
 };
 
-typedef struct zRPC_runnable_holder {
+struct zRPC_runnable_holder {
     void (*run_callback)(struct zRPC_runnable_holder *run);
 
     zRPC_runnable runnable;
-} zRPC_runnable_holder;
+};
 
 zRPC_runnable *zRPC_runnable_create(void *(*run)(void *), void *arg, void (*run_callback)(zRPC_runnable_holder *)) {
     zRPC_runnable_holder *runnable_holder = malloc(sizeof(zRPC_runnable_holder));
