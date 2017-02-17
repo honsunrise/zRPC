@@ -58,7 +58,7 @@ static inline void __barrier_compiler(void) {
         r;                                                                        \
     })
 
-#define ZRPC_ATOM_NO_BARRIER_LOAD((p))                                            \
+#define ZRPC_ATOM_NO_BARRIER_LOAD(p)                                            \
     ({                                                                            \
         typeof(*(p)) r;                                                           \
         *((OPERATION_TYPE*)&r) = __sync_fetch_and_add((OPERATION_TYPE*)(p), 0);   \
