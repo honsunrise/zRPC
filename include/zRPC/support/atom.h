@@ -147,7 +147,7 @@ static inline void __barrier_compiler(void) {
         o = *(e);                                                                                                   \
         *((OPERATION_TYPE*)(e)) =                                                                                   \
             __sync_val_compare_and_swap((OPERATION_TYPE*)(p), *((OPERATION_TYPE*)(&o)), *((OPERATION_TYPE*)(&v)));  \
-        *((OPERATION_TYPE_LONG*)(o&)) == *((OPERATION_TYPE_LONG*)(e));                                              \
+        *((OPERATION_TYPE_LONG*)(&o)) == *((OPERATION_TYPE_LONG*)(e));                                              \
     })
 
 #define ZRPC_ATOM_ACQUIRE_CAS(p, e, n)                                                                              \
@@ -158,7 +158,7 @@ static inline void __barrier_compiler(void) {
         *((OPERATION_TYPE*)(e)) =                                                                                   \
             __sync_val_compare_and_swap((OPERATION_TYPE*)(p), *((OPERATION_TYPE*)(&o)), *((OPERATION_TYPE*)(&v)));  \
         ZRPC_ATOM_LOAD_BARRIER();                                                                                   \
-        *((OPERATION_TYPE_LONG*)(o&)) == *((OPERATION_TYPE_LONG*)(e));                                              \
+        *((OPERATION_TYPE_LONG*)(&o)) == *((OPERATION_TYPE_LONG*)(e));                                              \
     })
 
 
@@ -182,7 +182,7 @@ static inline void __barrier_compiler(void) {
         *((OPERATION_TYPE_LONG*)(e)) =                                                                              \
             __sync_val_compare_and_swap((OPERATION_TYPE_LONG*)(p), *((OPERATION_TYPE_LONG*)(&o)),                   \
                                         *((OPERATION_TYPE_LONG*)(&v)));                                             \
-        *((OPERATION_TYPE_LONG*)(o&)) == *((OPERATION_TYPE_LONG*)(e));                                              \
+        *((OPERATION_TYPE_LONG*)(&o)) == *((OPERATION_TYPE_LONG*)(e));                                              \
     })
 
 #define ZRPC_ATOM_ACQUIRE_DWCAS(p, e, n)                                                                            \
@@ -194,7 +194,7 @@ static inline void __barrier_compiler(void) {
             __sync_val_compare_and_swap((OPERATION_TYPE_LONG*)(p), *((OPERATION_TYPE_LONG*)(&o)),                   \
                                         *((OPERATION_TYPE_LONG*)(&v)));                                             \
         ZRPC_ATOM_LOAD_BARRIER();                                                                                   \
-        *((OPERATION_TYPE_LONG*)(o&)) == *((OPERATION_TYPE_LONG*)(e));                                              \
+        *((OPERATION_TYPE_LONG*)(&o)) == *((OPERATION_TYPE_LONG*)(e));                                              \
     })
 
 #define ZRPC_ATOM_RELEASE_DWCAS(p, e, n)                                                                            \
@@ -206,7 +206,7 @@ static inline void __barrier_compiler(void) {
         *((OPERATION_TYPE_LONG*)(e)) =                                                                              \
             __sync_val_compare_and_swap((OPERATION_TYPE_LONG*)(p), *((OPERATION_TYPE_LONG*)(&o)),                   \
                                         *((OPERATION_TYPE_LONG*)(&v)));                                             \
-        *((OPERATION_TYPE_LONG*)(o&)) == *((OPERATION_TYPE_LONG*)(e));                                              \
+        *((OPERATION_TYPE_LONG*)(&o)) == *((OPERATION_TYPE_LONG*)(e));                                              \
     })
 #endif
 
