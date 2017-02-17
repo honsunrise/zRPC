@@ -70,14 +70,14 @@ static inline void __barrier_compiler(void) {
         typeof(value) v = value;                                                         \
         OPERATION_TYPE c = *((OPERATION_TYPE*)(p));                                      \
         ZRPC_ATOM_STORE_BARRIER();                                                       \
-        __sync_bool_compare_and_swap((OPERATION_TYPE*)(p), c, *((OPERATION_TYPE*)(&v)))  \
+        __sync_bool_compare_and_swap((OPERATION_TYPE*)(p), c, *((OPERATION_TYPE*)(&v))); \
     })
 
 #define ZRPC_ATOM_NO_BARRIER_STORE(p, value)                                             \
     ({                                                                                   \
         typeof(value) v = value;                                                         \
         OPERATION_TYPE c = *((OPERATION_TYPE*)(p));                                      \
-        __sync_bool_compare_and_swap((OPERATION_TYPE*)(p), c, *((OPERATION_TYPE*)(&v)))  \
+        __sync_bool_compare_and_swap((OPERATION_TYPE*)(p), c, *((OPERATION_TYPE*)(&v))); \
     })
 
 /*
