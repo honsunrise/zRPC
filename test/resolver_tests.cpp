@@ -4,7 +4,7 @@
 
 #include "zRPC/context.h"
 #include "gtest/gtest.h"
-#include <thread>
+#include <boost/thread.hpp>
 
 volatile size_t naddres = 0;
 void resolver_complete_callback(void *custom_arg, zRPC_resolved *resolved) {
@@ -23,7 +23,7 @@ TEST (ResolverTest, PositiveNos) {
 }
 
 int main(int argc, char **argv) {
-    std::thread test_thread(test);
+    boost::thread test_thread(test);
     test_thread.detach();
     sleep(5);
     ::testing::InitGoogleTest(&argc, argv);

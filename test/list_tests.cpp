@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "../src/lfds/lfds.h"
-#include <thread>
+#include <boost/thread.hpp>
 
 struct zRPC_lfds_list_state list;
 int long run_insert_test() {
@@ -18,19 +18,16 @@ int long get_list_count() {
     return zRPC_lfds_list_count(&list);
 }
 
+static void test_i() {
+    volatile int i = 5000000;
+    while (i--) {
+        run_insert_test();
+    }
+}
+
 int long run_multi_thread_test() {
-    std::thread insert_thread1([](){
-        volatile int i = 5000000;
-        while (i--) {
-            run_insert_test();
-        }
-    });
-    std::thread insert_thread2([](){
-        volatile int i = 5000000;
-        while (i--) {
-            run_insert_test();
-        }
-    });
+    boost::thread insert_thread1(test_i);
+    boost::thread insert_thread2(test_i);
     insert_thread1.join();
     insert_thread2.join();
     return get_list_count();

@@ -25,6 +25,15 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+set(Boost_USE_STATIC_LIBS        ON) # only find static libs
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+
+find_package(Boost 1.58.0 COMPONENTS iostreams date_time filesystem system program_options thread)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 set(SOURCE_STACK_FILES stack_tests.cpp)
 add_executable(stack-test ${SOURCE_STACK_FILES})
 target_link_libraries(stack-test zRPC gtest_main)
@@ -54,3 +63,12 @@ set(SOURCE_FILTER_FILES msgpack_filter_tests.cpp)
 add_executable(msgpack-test ${SOURCE_FILTER_FILES})
 target_link_libraries(msgpack-test zRPC gtest_main)
 add_test(NAME msgpack-test COMMAND msgpack-test)
+
+if(Boost_FOUND)
+    target_link_libraries(stack-test ${Boost_LIBRARIES})
+    target_link_libraries(list-test ${Boost_LIBRARIES})
+    target_link_libraries(queue-test ${Boost_LIBRARIES})
+    target_link_libraries(timer-test ${Boost_LIBRARIES})
+    target_link_libraries(resolver-test ${Boost_LIBRARIES})
+    target_link_libraries(msgpack-test ${Boost_LIBRARIES})
+endif()

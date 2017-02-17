@@ -2,7 +2,7 @@
 // Created by zhsyourai on 1/22/17.
 //
 
-#include <thread>
+#include <boost/thread.hpp>
 #include "zRPC/context.h"
 #include "gtest/gtest.h"
 
@@ -29,7 +29,7 @@ void test() {
 }
 
 int main(int argc, char **argv) {
-    std::thread test_thread(test);
+    boost::thread test_thread(test);
     test_thread.detach();
     sleep(5);
     ::testing::InitGoogleTest(&argc, argv);

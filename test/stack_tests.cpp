@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "../src/lfds/lfds.h"
-#include <thread>
+#include <boost/thread.hpp>
 
 struct zRPC_stack_state list;
 int long run_insert_test() {
@@ -24,37 +24,28 @@ int long run_get_test() {
     return 0;
 }
 
+static void test_i() {
+    volatile int i = 5000000;
+    while (i--) {
+        run_insert_test();
+    }
+}
+
+static void test_r() {
+    volatile int i = 5000000;
+    while (1) {
+        if(run_get_test()) {
+            --i;
+        }
+        if(i <= 0) break;
+    }
+}
+
 int long run_multi_thread_test() {
-    std::thread insert_thread1([](){
-        volatile int i = 5000000;
-        while (i--) {
-            run_insert_test();
-        }
-    });
-    std::thread insert_thread2([](){
-        volatile int i = 5000000;
-        while (i--) {
-            run_insert_test();
-        }
-    });
-    std::thread read_thread1([](){
-        volatile int i = 5000000;
-        while (1) {
-            if(run_get_test()) {
-                --i;
-            }
-            if(i <= 0) break;
-        }
-    });
-    std::thread read_thread2([](){
-        volatile int i = 5000000;
-        while (1) {
-            if(run_get_test()) {
-                --i;
-            }
-            if(i <= 0) break;
-        }
-    });
+    boost::thread insert_thread1(test_i);
+    boost::thread insert_thread2(test_i);
+    boost::thread read_thread1(test_r);
+    boost::thread read_thread2(test_r);
     insert_thread1.join();
     insert_thread2.join();
     read_thread1.join();
