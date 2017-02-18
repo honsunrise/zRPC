@@ -4,17 +4,18 @@
 
 #include <memory.h>
 #include <sys/poll.h>
-#include <zRPC/context.h>
+#include "zRPC/context.h"
+#include "zRPC/ds/hashmap.h"
 
 typedef struct zRPC_poll_context {
     zRPC_context *context;
     struct pollfd *fds;
     unsigned int nfds;
     unsigned int fds_cap;
-    zRPC_fd *fd_map[65535][3];
+    zRPC_hashmap *fd_map;
 } zRPC_poll_context;
 
-#define CHOICE_EVENT_IDX(ev) (ev & (EV_READ | EV_WRITE) ? ev & EV_READ ? 0 : 1 : 2)
+#define CHOICE_EVENT_IDX(ev) (ev & (EV_READ | EV_WRITE) ? ev & EV_READ ? 2 : 1 : 0)
 
 static void *initialize(zRPC_context *);
 
@@ -25,6 +26,19 @@ static int del(zRPC_context *, zRPC_event *);
 static int dispatch(zRPC_context *, zRPC_timespec *ts);
 
 static void uninitialize(zRPC_context *);
+
+static int int_hash_function(void *key) {
+    return (int)(key);
+}
+
+static int equals(void* keyA, void* keyB) {
+    return keyA == keyB;
+}
+
+typedef struct hashmap_entry{
+    int pollfds_index;
+    zRPC_fd *fd;
+} hashmap_entry;
 
 const zRPC_event_engine_vtable poll_event_engine_vtable = {
         "poll",
@@ -42,28 +56,22 @@ static void *initialize(zRPC_context *context) {
     poll_context->nfds = 0;
     poll_context->fds_cap = 32;
     poll_context->fds = calloc(poll_context->fds_cap, sizeof(struct pollfd));
+    poll_context->fd_map = hashmapCreate(1024, int_hash_function, equals);
     return poll_context;
 }
 
 static void uninitialize(zRPC_context *context) {
-    if (context->event_engine_context)
+    if (context->event_engine_context) {
+        hashmapFree(((zRPC_poll_context*)context->event_engine_context)->fd_map);
         free(((zRPC_poll_context *) context->event_engine_context)->fds);
-    free(context->event_engine_context);
+        free(context->event_engine_context);
+    }
 }
 
 static int add(zRPC_context *context, zRPC_event *event) {
     zRPC_poll_context *poll_context = context->event_engine_context;
     if (!(event->event_status & EVS_INIT)) {
         return -1;
-    }
-    if (poll_context->nfds >= poll_context->fds_cap) {
-        unsigned int new_size = poll_context->fds_cap * 2;
-        struct pollfd *new_fds = realloc(poll_context->fds, new_size * sizeof(zRPC_poll_context));
-        if (new_fds == NULL) {
-            return -1;
-        }
-        poll_context->fds = new_fds;
-        poll_context->fds_cap = new_size;
     }
     short care = 0;
     if (event->event_type & EV_WRITE) {
@@ -72,15 +80,28 @@ static int add(zRPC_context *context, zRPC_event *event) {
     if (event->event_type & EV_READ) {
         care |= POLLIN;
     }
-    event->event_status = EVS_REGISTER;
-    event->event_info = malloc(sizeof(int));
-    if (event->event_info == NULL) {
-        return -1;
+    hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd));
+    if(entry == NULL) {
+        if (poll_context->nfds >= poll_context->fds_cap) {
+            unsigned int new_size = poll_context->fds_cap * 2;
+            struct pollfd *new_fds = realloc(poll_context->fds, new_size * sizeof(zRPC_poll_context));
+            if (new_fds == NULL) {
+                return -1;
+            }
+            poll_context->fds = new_fds;
+            poll_context->fds_cap = new_size;
+        }
+        entry = malloc(sizeof(hashmap_entry));
+        entry->fd = event->fd;
+        entry->pollfds_index = poll_context->nfds;
+        hashmapPut(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd), entry);
+        poll_context->fds[poll_context->nfds].fd = zRPC_fd_origin(event->fd);
+        poll_context->fds[poll_context->nfds++].events = care;
+    } else {
+        poll_context->fds[entry->pollfds_index].events |= care;
     }
-    *(int *) event->event_info = poll_context->nfds;
-    poll_context->fd_map[zRPC_fd_origin(event->fd)][CHOICE_EVENT_IDX(event->event_status)] = event->fd;
-    poll_context->fds[poll_context->nfds].fd = zRPC_fd_origin(event->fd);
-    poll_context->fds[poll_context->nfds++].events = care;
+
+    event->event_status = EVS_REGISTER;
     return 0;
 }
 
@@ -89,15 +110,21 @@ static int del(zRPC_context *context, zRPC_event *event) {
     if (!(event->event_status & EVS_REGISTER)) {
         return -1;
     }
-    int pollfd_idx = *(int *) event->event_info;
-    struct pollfd *pfd = &poll_context->fds[pollfd_idx];
+    hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd));
+    struct pollfd *pfd = &poll_context->fds[entry->pollfds_index];
     if (event->event_type & EV_READ)
         pfd->events &= ~POLLIN;
     if (event->event_type & EV_WRITE)
         pfd->events &= ~POLLOUT;
     if (pfd->events)
         return 0;
-    free(event->event_info);
+    struct pollfd *move = &poll_context->fds[poll_context->nfds - 1];
+    hashmap_entry *move_entry = hashmapGet(poll_context->fd_map, (void *) move->fd);
+    assert(move_entry != NULL);
+    move_entry->pollfds_index = entry->pollfds_index;
+    memcpy(&poll_context->fds[entry->pollfds_index], &poll_context->fds[--poll_context->nfds], sizeof(struct pollfd));
+    hashmapRemove(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd));
+    free(entry);
     return 0;
 }
 
@@ -134,8 +161,9 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
             res |= EV_WRITE;
         if (res == 0)
             continue;
-
-        zRPC_context_fd_event_happen(context, poll_context->fd_map[event_set[j].fd][CHOICE_EVENT_IDX(res)], res);
+        hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) event_set[j].fd);
+        assert(entry != NULL);
+        zRPC_context_fd_event_happen(context, entry->fd, res);
     }
     return (0);
 }
