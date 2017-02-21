@@ -130,7 +130,9 @@ static int child_io_thread(void *arg) {
     arg_write->arg1 = channel;
     arg_write->callback = (void *(*)(void *)) zRPC_channel_event_on_write;
 
-    zRPC_event *event = zRPC_event_fd_create(new_fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, on_write);
+    zRPC_event *event = zRPC_event_fd_create(new_fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, NULL);
+    zRPC_context_register_event(context, event);
+    event = zRPC_event_fd_create(new_fd, EV_WRITE , NULL, on_write);
     zRPC_context_register_event(context, event);
     zRPC_server_add_channel(server, channel);
 
