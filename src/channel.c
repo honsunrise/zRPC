@@ -207,7 +207,7 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
         if (read == 0)
             break;
         read = zRPC_fd_read(channel->fd, temp, (size_t) read);
-        if (read == 0) {
+        if (read <= 0) {
             zRPC_fd_close(channel->fd);
             zRPC_channel_on_inactive(channel);
             zRPC_channel_destroy(channel);
