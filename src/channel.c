@@ -350,10 +350,11 @@ static void help_call_write_filter(zRPC_filter_linked_node *filter, zRPC_channel
 }
 
 void zRPC_channel_write(zRPC_channel *channel, void *msg) {
-    zRPC_mutex_lock(&channel->lock);
     zRPC_filter_linked_node *filter = channel->tail;
-    if (filter == NULL)
+    if (filter == NULL) {
         return;
+    }
+    zRPC_mutex_lock(&channel->lock);
     help_call_write_filter(filter, channel, msg);
     zRPC_mutex_unlock(&channel->lock);
 }
