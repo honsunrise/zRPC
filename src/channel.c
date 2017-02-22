@@ -59,6 +59,7 @@ struct zRPC_channel {
     int is_writing;
     zRPC_list_head pending_write;
     zRPC_list_head done_write;
+    zRPC_mutex lock;
 };
 
 void zRPC_pipe_create(zRPC_pipe **out) {
@@ -142,6 +143,7 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
     channel->context = context;
     channel->is_active = 0;
     channel->is_writing = 0;
+    zRPC_mutex_init(&channel->lock);
     zRPC_list_init(&channel->pending_write);
     zRPC_list_init(&channel->done_write);
     zRPC_ring_buf_create(&channel->buffer, 4096);
@@ -348,8 +350,10 @@ static void help_call_write_filter(zRPC_filter_linked_node *filter, zRPC_channel
 }
 
 void zRPC_channel_write(zRPC_channel *channel, void *msg) {
+    zRPC_mutex_lock(&channel->lock);
     zRPC_filter_linked_node *filter = channel->tail;
     if (filter == NULL)
         return;
     help_call_write_filter(filter, channel, msg);
+    zRPC_mutex_unlock(&channel->lock);
 }
