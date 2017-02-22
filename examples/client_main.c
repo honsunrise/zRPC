@@ -9,12 +9,18 @@
 #include <zRPC/rpc/call_stub.h>
 
 void caller_add(zRPC_channel *channel, int64_t a, int64_t b, int64_t *ret) {
-    zRPC_call_param *params = malloc(sizeof(zRPC_call_param) * 2);
+    zRPC_call_param *params = malloc(sizeof(zRPC_call_param) * 3);
     params[0].name = "a";
     params[0].value = zRPC_type_var_create_base(INT64, &a);
     params[1].name = "b";
     params[1].value = zRPC_type_var_create_base(INT64, &b);
-    zRPC_call *call = zRPC_call_do_call(channel, "add", params, 2);
+    params[2].name = "c";
+    params[2].value = zRPC_type_var_create_array(1000);
+    for (int i = 0; i < 1000; ++i) {
+        char v = (char) (i % 256);
+        params[2].value->array_value->value[i] = zRPC_type_var_create_base(BYTE, &v);
+    }
+    zRPC_call *call = zRPC_call_do_call(channel, "add", params, 3);
     zRPC_call_result *result;
     zRPC_call_wait_result(call, &result);
     zRPC_call_destroy(call);

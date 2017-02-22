@@ -19,6 +19,8 @@ static void release_var_function(void *ptr) {
             for (int i = 0; i < value->array_value->len; ++i) {
                 release_var_function(value->array_value->value[i]);
             }
+            free(value->array_value->value);
+            free(value->array_value);
             break;
         case MAP:
             for (int i = 0; i < value->map_value->len; ++i) {
@@ -29,6 +31,8 @@ static void release_var_function(void *ptr) {
                     release_var_function(value->map_value->value[i].value);
                 }
             }
+            free(value->map_value->value);
+            free(value->map_value);
             break;
         default:
             break;

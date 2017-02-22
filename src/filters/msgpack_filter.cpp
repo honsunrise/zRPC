@@ -34,14 +34,14 @@ static inline void release_msgpack_object(msgpack::object &object) {
             for (int i = 0; i < object.via.array.size; ++i) {
                 release_msgpack_object(object.via.array.ptr[i]);
             }
-            delete[]object.via.array.ptr;
+            delete[] object.via.array.ptr;
             break;
         case msgpack::type::MAP:
             for (int i = 0; i < object.via.map.size; ++i) {
                 release_msgpack_object(object.via.map.ptr[i].key);
                 release_msgpack_object(object.via.map.ptr[i].val);
             }
-            delete[]object.via.map.ptr;
+            delete[] object.via.map.ptr;
             break;
         case msgpack::type::EXT:
             break;
