@@ -144,38 +144,28 @@ static inline zRPC_value *zRPC_get_zRPC_array(msgpack::object_array *array_value
     int8_t byte_v;
     int64_t int64_v;
     float float_v;
-    switch (array_value->ptr->type) {
-        case msgpack::type::NEGATIVE_INTEGER:
-            ret_array = zRPC_type_var_create_array(array_value->size);
-            for (int i = 0; i < array_value->size; ++i) {
+    ret_array = zRPC_type_var_create_array(array_value->size);
+    for (int i = 0; i < array_value->size; ++i) {
+        switch (array_value->ptr[i].type) {
+            case msgpack::type::NEGATIVE_INTEGER:
                 int64_v = array_value->ptr[i].convert();
-                ret_array->array_value->value[i] =
-                        zRPC_type_var_create_base(INT64, &int64_v);
-            }
-            return ret_array;
-        case msgpack::type::FLOAT :
-            ret_array = zRPC_type_var_create_array(array_value->size);
-            for (int i = 0; i < array_value->size; ++i) {
+                ret_array->array_value->value[i] = zRPC_type_var_create_base(INT64, &int64_v);
+                break;
+            case msgpack::type::FLOAT :
                 float_v = array_value->ptr[i].convert();
-                ret_array->array_value->value[i] =
-                        zRPC_type_var_create_base(FLOAT, &float_v);
-            }
-            return ret_array;
-        case msgpack::type::STR:
-            ret_array = zRPC_type_var_create_array(array_value->size);
-            for (int i = 0; i < array_value->size; ++i) {
+                ret_array->array_value->value[i] = zRPC_type_var_create_base(FLOAT, &float_v);
+                break;
+            case msgpack::type::STR:
                 array_value->ptr[i].convert(str_v);
                 ret_array->array_value->value[i] = zRPC_type_var_create_base(STR, (void *) str_v.c_str());
-            }
-            return ret_array;
-        default:
-            ret_array = zRPC_type_var_create_array(array_value->size);
-            for (int i = 0; i < array_value->size; ++i) {
+                break;
+            default:
                 byte_v = array_value->ptr[i].convert();
                 ret_array->array_value->value[i] = zRPC_type_var_create_base(BYTE, &byte_v);
-            }
-            return ret_array;
+                break;
+        }
     }
+    return ret_array;
 };
 
 static zRPC_value *msgpack_value_to_zRPC_base_value(msgpack::object value) {
