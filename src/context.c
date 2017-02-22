@@ -194,6 +194,7 @@ void zRPC_context_dispatch(zRPC_context *context) {
                 event->event_status = EVS_REGISTER;
                 if (!(event->event_type & EV_PERSIST)) {
                     zRPC_context_unregister_event(context, event);
+                    zRPC_event_destroy(event);
                 }
             } else if (event->event_type & EVENT_TYPE_TIMER_MASK) {
                 if (happen & EV_TIMER) {
