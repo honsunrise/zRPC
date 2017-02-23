@@ -24,6 +24,7 @@ typedef struct zRPC_context {
     zRPC_list_head event_active;
     size_t event_active_count;
     zRPC_list_head event_pending;
+    zRPC_list_head event_remove;
     void *event_engine_context;
     const zRPC_event_engine_vtable *event_engine;
     zRPC_timer_holder *timer_holder;
@@ -43,6 +44,8 @@ zRPC_context *zRPC_context_create();
 int zRPC_context_register_event(zRPC_context *context, zRPC_event *event);
 
 int zRPC_context_unregister_event(zRPC_context *context, zRPC_event *event);
+
+size_t zRPC_context_unregister_event_fd(zRPC_context *context, zRPC_fd *fd);
 
 void zRPC_context_fd_event_happen(zRPC_context *context, zRPC_fd *fd, int res);
 

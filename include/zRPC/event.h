@@ -51,6 +51,7 @@ typedef struct zRPC_event {
     };
     zRPC_list_head list_node_register;
     zRPC_list_head list_node_active;
+    zRPC_list_head list_node_remove;
 } zRPC_event;
 
 typedef struct zRPC_pending_event {

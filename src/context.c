@@ -34,6 +34,7 @@ zRPC_context *zRPC_context_create() {
     zRPC_list_init(&context->event_register);
     zRPC_list_init(&context->event_active);
     zRPC_list_init(&context->event_pending);
+    zRPC_list_init(&context->event_remove);
 
     context->event_engine = g_event_engines[1];
     context->event_engine_context = context->event_engine->initialize(context);
@@ -83,6 +84,24 @@ int zRPC_context_unregister_event(zRPC_context *context, zRPC_event *event) {
     zRPC_list_del(&event->list_node_register);
     zRPC_context_notify(context);
     return 0;
+}
+
+size_t zRPC_context_unregister_event_fd(zRPC_context *context, zRPC_fd *fd) {
+    volatile size_t ret = 0;
+    zRPC_list_head *pos;
+    zRPC_list_for_each(pos, &context->event_register) {
+        zRPC_event *event = zRPC_list_entry(pos, zRPC_event, list_node_register);
+        if (event->fd == fd) {
+            zRPC_list_add(&event->list_node_remove, &context->event_remove);
+        }
+    }
+    zRPC_list_for_each(pos, &context->event_remove) {
+        zRPC_event *event = zRPC_list_entry(pos, zRPC_event, list_node_remove);
+        zRPC_list_del(&event->list_node_register);
+        ++ret;
+    }
+    zRPC_list_init(&context->event_remove);
+    return ret;
 }
 
 void zRPC_context_fd_event_happen(zRPC_context *context, zRPC_fd *fd, int res) {

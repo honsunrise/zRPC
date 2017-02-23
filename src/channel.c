@@ -152,6 +152,7 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
 
 void zRPC_channel_destroy(zRPC_channel *channel) {
     if (channel != NULL) {
+        zRPC_fd_close(channel->fd);
         zRPC_fd_destroy(channel->fd);
         zRPC_filter_linked_node *head = channel->head;
         zRPC_filter_linked_node *node;
@@ -161,6 +162,7 @@ void zRPC_channel_destroy(zRPC_channel *channel) {
             head = head->next;
             free (node);
         }
+        zRPC_context_unregister_event_fd(channel->context, channel->fd);
         free(channel);
     }
 }
@@ -208,7 +210,6 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
             break;
         read = zRPC_fd_read(channel->fd, temp, (size_t) read);
         if (read <= 0) {
-            zRPC_fd_close(channel->fd);
             zRPC_channel_on_inactive(channel);
             zRPC_channel_destroy(channel);
             return NULL;
