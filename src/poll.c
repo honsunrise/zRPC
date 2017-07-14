@@ -71,7 +71,7 @@ static int add(zRPC_context *context, zRPC_event *event) {
   if (!(event->event_status & EVS_INIT)) {
     return -1;
   }
-  short care = 0;
+  short care = POLLERR | POLLHUP | POLLNVAL;
   if (event->event_type & EV_WRITE) {
     care |= POLLOUT;
   }

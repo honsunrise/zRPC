@@ -66,7 +66,7 @@ static int add(zRPC_context *context, zRPC_event *event) {
   if (evs == NULL) {
     evs = malloc(sizeof(struct epoll_event));
     evs->data.ptr = event->fd;
-    evs->events = EPOLLET;
+    evs->events = EPOLLET | EPOLLRDHUP | EPOLLERR;
     if (event->event_type & EV_WRITE) {
       evs->events |= EPOLLOUT;
     }
