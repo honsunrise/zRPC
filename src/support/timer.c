@@ -22,7 +22,7 @@ zRPC_timer *zRPC_timer_schedule(zRPC_context *context, zRPC_timespec deadline, z
 zRPC_timer *zRPC_timer_schedule_now(zRPC_context *context, zRPC_timespec deadline, zRPC_runnable *runnable,
                                     zRPC_timespec now) {
     zRPC_timer *timer = malloc(sizeof(zRPC_timer));
-    zRPC_event *event = zRPC_event_timer_create(timer, runnable);
+    zRPC_event *event = zRPC_event_create(timer, EV_TIMER, runnable);
     zRPC_context_register_event(context, event);
     int is_first_timer = 0;
     timer->deadline = deadline;

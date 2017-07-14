@@ -12,67 +12,52 @@
 #include "fd.h"
 
 typedef enum zRPC_EVENT_TYPE {
-    EV_ACTIVE = 0x01,
-    EV_READ = 0x02,
-    EV_WRITE = 0x04,
-    EV_INACTIVE = 0x08,
-    EV_TIMER = 0x10,
-    EV_PERSIST = 0x20,
-    EV_ERROR = 0x40,
+  EV_ACTIVE = 0x01,
+  EV_READ = 0x02,
+  EV_WRITE = 0x04,
+  EV_INACTIVE = 0x08,
+  EV_TIMER = 0x10,
+  EV_PERSIST = 0x20,
+  EV_ERROR = 0x40,
 } zRPC_EVENT_TYPE;
 
 #define EVENT_TYPE_FD_MASK (EV_ACTIVE | EV_READ | EV_WRITE | EV_INACTIVE)
 #define EVENT_TYPE_TIMER_MASK (EV_TIMER)
 
 typedef enum zRPC_EVENT_STATUS {
-    EVS_INIT = 0x01,
-    EVS_REGISTER = 0x02,
-    EVS_ACTIVE = 0x04
+  EVS_INIT = 0x01,
+  EVS_REGISTER = 0x02,
+  EVS_ACTIVE = 0x04
 } zRPC_EVENT_STATUS;
 
 typedef struct zRPC_event {
-    union {
-        zRPC_sample_fd *fd;
-        zRPC_timer *timer;
-    };
+  union {
+    zRPC_sample_fd *fd;
+    zRPC_timer *timer;
+  };
 
-    void *event_info;
-    int event_happen;
-    zRPC_EVENT_TYPE event_type;
-    zRPC_EVENT_STATUS event_status;
-    union {
-        struct {
-            zRPC_runnable *read_callback;
-            zRPC_runnable *write_callback;
-            zRPC_runnable *close_callback;
-        };
-        struct {
-            zRPC_runnable *callback;
-        };
-    };
-    zRPC_list_head list_node_register;
-    zRPC_list_head list_node_active;
-    zRPC_list_head list_node_remove;
+  void *event_info;
+  int event_happen;
+  zRPC_EVENT_TYPE event_type;
+  zRPC_EVENT_STATUS event_status;
+  zRPC_runnable *callback;
+  zRPC_list_head list_node_register;
+  zRPC_list_head list_node_active;
+  zRPC_list_head list_node_remove;
 } zRPC_event;
 
 typedef struct zRPC_pending_event {
-    zRPC_event *event;
-    int event_happen;
-    zRPC_list_head list_node;
+  zRPC_event *event;
+  int event_happen;
+  zRPC_list_head list_node;
 } zRPC_pending_event;
 
 /* THIS function work for zRPC_event */
 
-zRPC_event *zRPC_event_fd_create(zRPC_sample_fd *fd,
-                                 zRPC_EVENT_TYPE event_type,
-                                 zRPC_runnable *read_callback,
-                                 zRPC_runnable *write_callback);
-
-zRPC_event *zRPC_event_timer_create(zRPC_timer *timer,
-                                    zRPC_runnable *callback);
+zRPC_event *zRPC_event_create(void *target,
+                              zRPC_EVENT_TYPE event_type,
+                              zRPC_runnable *callback);
 
 void zRPC_event_destroy(zRPC_event *event);
-
-void zRPC_event_set_event_type(zRPC_event *event, zRPC_EVENT_TYPE event_type);
 
 #endif //ZRPC_EVENT_H

@@ -43,8 +43,7 @@ zRPC_context *zRPC_context_create() {
   zRPC_create_notifiable_fd(context->notify_fd);
   context->notify_runnable = zRPC_runnable_create((void *(*)(void *)) notify_cb, context,
                                                   zRPC_runnable_noting_callback);
-  context->notify_event = zRPC_event_fd_create(context->notify_fd[0], EV_READ | EV_PERSIST,
-                                               context->notify_runnable, NULL);
+  context->notify_event = zRPC_event_create(context->notify_fd[0], EV_READ | EV_PERSIST, context->notify_runnable);
   zRPC_context_register_event(context, context->notify_event);
 
   zRPC_resolver_init(context);
@@ -206,11 +205,9 @@ void zRPC_context_dispatch(zRPC_context *context) {
       if (event->event_type & EVENT_TYPE_FD_MASK) {
         int read_ev = happen & (EV_READ);
         int write_ev = happen & (EV_WRITE);
-        if (read_ev) {
-          zRPC_context_run(context, event->read_callback);
-        }
-        if (write_ev) {
-          zRPC_context_run(context, event->write_callback);
+        int error_ev = happen & (EV_ERROR);
+        if (read_ev || write_ev || error_ev) {
+          zRPC_context_run(context, event->callback);
         }
         event->event_status = EVS_REGISTER;
         if (!(event->event_type & EV_PERSIST)) {
@@ -218,7 +215,7 @@ void zRPC_context_dispatch(zRPC_context *context) {
           zRPC_event_destroy(event);
         }
       } else if (event->event_type & EVENT_TYPE_TIMER_MASK) {
-        if (happen & EV_TIMER) {
+        if (happen & EV_TIMER || happen & EV_ERROR) {
           zRPC_context_run(context, event->callback);
         }
         event->event_status = EVS_REGISTER;

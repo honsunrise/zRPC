@@ -130,9 +130,9 @@ static int child_io_thread(void *arg) {
     arg_write->arg1 = channel;
     arg_write->callback = (void *(*)(void *)) zRPC_channel_event_on_write;
 
-    zRPC_event *event = zRPC_event_fd_create(new_fd, EV_READ | EV_INACTIVE | EV_PERSIST, on_read, NULL);
+    zRPC_event *event = zRPC_event_create(new_fd, EV_READ | EV_PERSIST, on_read);
     zRPC_context_register_event(context, event);
-    event = zRPC_event_fd_create(new_fd, EV_WRITE , NULL, on_write);
+    event = zRPC_event_create(new_fd, EV_WRITE, on_write);
     zRPC_context_register_event(context, event);
     zRPC_server_add_channel(server, channel);
 
@@ -191,7 +191,7 @@ static int add_listener_to_server(zRPC_tcp_server *server, int fd, zRPC_inetaddr
     zRPC_channel *channel;
     zRPC_channel_create(&channel, zRPC_server_get_pipe(server->server), listener->fd,
                         zRPC_server_get_context(server->server));
-    zRPC_event *event = zRPC_event_fd_create(listener->fd, EV_READ | EV_PERSIST, read, NULL);
+    zRPC_event *event = zRPC_event_create(listener->fd, EV_READ | EV_PERSIST, read);
     zRPC_context_register_event(zRPC_server_get_context(server->server), event);
     if (server->listener_head == NULL) {
         server->listener_head = listener;
