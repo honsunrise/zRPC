@@ -139,7 +139,7 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
     return 0;
   }
 
-  for (int j = 0; j < p_rv; j++) {
+  for (int j = 0; j < nfds; j++) {
     int happen = event_set[j].revents;
     if (!happen)
       continue;
