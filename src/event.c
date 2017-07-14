@@ -4,7 +4,7 @@
 
 #include "zRPC/event.h"
 
-zRPC_event *zRPC_event_fd_create(zRPC_fd *fd,
+zRPC_event *zRPC_event_fd_create(zRPC_sample_fd *fd,
                                  zRPC_EVENT_TYPE event_type,
                                  zRPC_runnable *read_callback,
                                  zRPC_runnable *write_callback) {

@@ -21,7 +21,7 @@ typedef struct zRPC_event_engine_vtable {
 
     int (*dispatch)(struct zRPC_context *, zRPC_timespec *ts);
 
-    void (*uninitialize)(struct zRPC_context *);
+    void (*release)(struct zRPC_context *);
 
     size_t context_size;
 } zRPC_event_engine_vtable;

@@ -17,7 +17,8 @@ typedef enum zRPC_EVENT_TYPE {
     EV_WRITE = 0x04,
     EV_INACTIVE = 0x08,
     EV_TIMER = 0x10,
-    EV_PERSIST = 0x20
+    EV_PERSIST = 0x20,
+    EV_ERROR = 0x40,
 } zRPC_EVENT_TYPE;
 
 #define EVENT_TYPE_FD_MASK (EV_ACTIVE | EV_READ | EV_WRITE | EV_INACTIVE)
@@ -31,7 +32,7 @@ typedef enum zRPC_EVENT_STATUS {
 
 typedef struct zRPC_event {
     union {
-        zRPC_fd *fd;
+        zRPC_sample_fd *fd;
         zRPC_timer *timer;
     };
 
@@ -62,7 +63,7 @@ typedef struct zRPC_pending_event {
 
 /* THIS function work for zRPC_event */
 
-zRPC_event *zRPC_event_fd_create(zRPC_fd *fd,
+zRPC_event *zRPC_event_fd_create(zRPC_sample_fd *fd,
                                  zRPC_EVENT_TYPE event_type,
                                  zRPC_runnable *read_callback,
                                  zRPC_runnable *write_callback);

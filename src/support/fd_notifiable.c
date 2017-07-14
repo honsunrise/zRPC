@@ -6,7 +6,7 @@
 #include "zRPC/support/socket_utils.h"
 #include "fd_notifiable.h"
 
-int zRPC_create_notifiable_fd(zRPC_fd *fds[2]) {
+int zRPC_create_notifiable_fd(zRPC_sample_fd *fds[2]) {
     int fd[2];
     fds[0] = NULL;
     fds[1] = NULL;

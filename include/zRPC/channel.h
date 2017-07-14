@@ -32,7 +32,7 @@ void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct 
 
 void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_factory);
 
-void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_context *context);
+void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_sample_fd *fd, zRPC_context *context);
 
 void zRPC_channel_destroy(zRPC_channel *channel);
 
@@ -40,7 +40,7 @@ void zRPC_channel_set_custom_data(zRPC_channel *channel, void *custom_data);
 
 void *zRPC_channel_get_custom_data(zRPC_channel *channel);
 
-zRPC_fd *zRPC_channel_get_fd(zRPC_channel *channel);
+zRPC_sample_fd *zRPC_channel_get_fd(zRPC_channel *channel);
 
 void *zRPC_channel_on_active(zRPC_channel *channel);
 

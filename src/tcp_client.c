@@ -8,7 +8,7 @@
 
 struct zRPC_tcp_client {
     zRPC_client *client;
-    zRPC_fd *fd;
+    zRPC_sample_fd *fd;
     zRPC_inetaddr addr;
 };
 
@@ -64,7 +64,7 @@ zRPC_channel *zRPC_tcp_client_start(zRPC_tcp_client *tcp_client) {
     int err;
     zRPC_inetaddr addr6_v4mapped;
     zRPC_inetaddr addr4_copy;
-    zRPC_fd *fd;
+    zRPC_sample_fd *fd;
     char *addr_str;
     int error;
     zRPC_client *client = tcp_client->client;

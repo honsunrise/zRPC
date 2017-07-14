@@ -7,31 +7,31 @@
 #include <malloc.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "zRPC/context.h"
+#include "zRPC/fd.h"
 
-struct zRPC_fd {
+struct zRPC_sample_fd {
     int origin_fd;
 };
 
-zRPC_fd *zRPC_fd_create(int fd) {
-    zRPC_fd *new_fd = (zRPC_fd *) malloc(sizeof(zRPC_fd));
+zRPC_sample_fd *zRPC_fd_create(int fd) {
+    zRPC_sample_fd *new_fd = (zRPC_sample_fd *) malloc(sizeof(zRPC_sample_fd));
     new_fd->origin_fd = fd;
     return new_fd;
 }
 
-void zRPC_fd_destroy(zRPC_fd *fd) {
+void zRPC_fd_destroy(zRPC_sample_fd *fd) {
     if (fd) free(fd);
 }
 
-int zRPC_fd_origin(zRPC_fd *fd) {
+int zRPC_fd_origin(zRPC_sample_fd *fd) {
     return fd->origin_fd;
 }
 
-void zRPC_fd_close(zRPC_fd *fd) {
+void zRPC_fd_close(zRPC_sample_fd *fd) {
     close(fd->origin_fd);
 }
 
-ssize_t zRPC_fd_read(zRPC_fd *fd, void *buf, size_t len) {
+ssize_t zRPC_fd_read(zRPC_sample_fd *fd, void *buf, size_t len) {
     struct msghdr msg;
     struct iovec iov;
     ssize_t read_bytes;
@@ -57,7 +57,7 @@ ssize_t zRPC_fd_read(zRPC_fd *fd, void *buf, size_t len) {
     return read_bytes;
 }
 
-ssize_t zRPC_fd_write(zRPC_fd *fd, void *buf, size_t len) {
+ssize_t zRPC_fd_write(zRPC_sample_fd *fd, void *buf, size_t len) {
     struct msghdr msg;
     struct iovec iov;
     ssize_t sent_length;
