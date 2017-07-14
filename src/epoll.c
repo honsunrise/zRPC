@@ -76,8 +76,6 @@ static int add(zRPC_context *context, zRPC_event *event) {
     hashmapPut(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd), evs);
     epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd), evs);
   } else {
-    evs->events &= ~EPOLLIN;
-    evs->events &= ~EPOLLOUT;
     if (event->event_type & EV_WRITE) {
       evs->events |= EPOLLOUT;
     }
