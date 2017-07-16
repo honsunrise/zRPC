@@ -6,24 +6,21 @@
 #define ZRPC_EVENT_ENGINE_H
 
 #include "event.h"
-#include "zRPC/support/time.h"
-
-struct zRPC_context;
 
 typedef struct zRPC_event_engine_vtable {
-    const char *name;
+  const char *name;
 
-    void *(*initialize)(struct zRPC_context *);
+  void *(*initialize)();
 
-    int (*add)(struct zRPC_context *, zRPC_event *);
+  int (*add)(void *engine_context, zRPC_event *event);
 
-    int (*del)(struct zRPC_context *, zRPC_event *);
+  int (*del)(void *engine_context, zRPC_event *event);
 
-    int (*dispatch)(struct zRPC_context *, zRPC_timespec *ts);
+  int (*dispatch)(void *engine_context, uint32_t timeout, zRPC_event *events[], size_t *nevents);
 
-    void (*release)(struct zRPC_context *);
+  void (*release)(void *engine_context);
 
-    size_t context_size;
+  size_t engine_context_size;
 } zRPC_event_engine_vtable;
 
 #endif //ZRPC_EVENT_ENGINE_H

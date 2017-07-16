@@ -34,7 +34,7 @@ static int equals(void *keyA, void *keyB) {
 }
 
 typedef struct hashmap_entry {
-  int pollfds_index;
+  int poll_fds_index;
   zRPC_sample_fd *fd;
 } hashmap_entry;
 
@@ -91,12 +91,12 @@ static int add(zRPC_context *context, zRPC_event *event) {
     }
     entry = malloc(sizeof(hashmap_entry));
     entry->fd = event->fd;
-    entry->pollfds_index = poll_context->nfds;
+    entry->poll_fds_index = poll_context->nfds;
     hashmapPut(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd), entry);
     poll_context->fds[poll_context->nfds].fd = zRPC_fd_origin(event->fd);
     poll_context->fds[poll_context->nfds++].events = care;
   } else {
-    poll_context->fds[entry->pollfds_index].events |= care;
+    poll_context->fds[entry->poll_fds_index].events |= care;
   }
 
   event->event_status = EVS_REGISTER;
@@ -109,7 +109,7 @@ static int del(zRPC_context *context, zRPC_event *event) {
     return -1;
   }
   hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd));
-  struct pollfd *pfd = &poll_context->fds[entry->pollfds_index];
+  struct pollfd *pfd = &poll_context->fds[entry->poll_fds_index];
   if (event->event_type & EV_READ)
     pfd->events &= ~POLLIN;
   if (event->event_type & EV_WRITE)
@@ -119,8 +119,8 @@ static int del(zRPC_context *context, zRPC_event *event) {
   struct pollfd *move = &poll_context->fds[poll_context->nfds - 1];
   hashmap_entry *move_entry = hashmapGet(poll_context->fd_map, (void *) move->fd);
   assert(move_entry != NULL);
-  move_entry->pollfds_index = entry->pollfds_index;
-  memcpy(&poll_context->fds[entry->pollfds_index], &poll_context->fds[--poll_context->nfds], sizeof(struct pollfd));
+  move_entry->poll_fds_index = entry->poll_fds_index;
+  memcpy(&poll_context->fds[entry->poll_fds_index], &poll_context->fds[--poll_context->nfds], sizeof(struct pollfd));
   hashmapRemove(poll_context->fd_map, (void *) zRPC_fd_origin(event->fd));
   free(entry);
   return 0;
@@ -145,7 +145,7 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
       continue;
     hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) event_set[j].fd);
     assert(entry != NULL);
-    int cancel = happen & (POLLHUP | POLLERR | POLLNVAL);
+    int error = happen & (POLLHUP | POLLERR | POLLNVAL);
     int read_ev = happen & POLLIN;
     int write_ev = happen & POLLOUT;
     int res = 0;
@@ -155,7 +155,7 @@ static int dispatch(zRPC_context *context, zRPC_timespec *ts) {
     if (write_ev) {
       res |= EV_WRITE;
     }
-    if (cancel) {
+    if (error) {
       res |= EV_ERROR;
     }
     if (res == 0) {

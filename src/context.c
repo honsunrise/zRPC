@@ -36,7 +36,7 @@ zRPC_context *zRPC_context_create() {
   zRPC_list_init(&context->event_pending);
   zRPC_list_init(&context->event_remove);
 
-  context->event_engine = g_event_engines[1];
+  context->event_engine = g_event_engines[0];
   context->event_engine_context = context->event_engine->initialize(context);
   context->exit_dispatch = 0;
   zRPC_timer_init(context);

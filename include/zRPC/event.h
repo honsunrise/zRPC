@@ -12,13 +12,12 @@
 #include "fd.h"
 
 typedef enum zRPC_EVENT_TYPE {
-  EV_ACTIVE = 0x01,
-  EV_READ = 0x02,
-  EV_WRITE = 0x04,
-  EV_INACTIVE = 0x08,
-  EV_TIMER = 0x10,
-  EV_PERSIST = 0x20,
-  EV_ERROR = 0x40,
+  EV_READ = 0x01,
+  EV_WRITE = 0x02,
+  EV_CLOSE = 0x04,
+  EV_TIMER = 0x08,
+  EV_PERSIST = 0x10,
+  EV_ERROR = 0x20,
 } zRPC_EVENT_TYPE;
 
 #define EVENT_TYPE_FD_MASK (EV_ACTIVE | EV_READ | EV_WRITE | EV_INACTIVE)

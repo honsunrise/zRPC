@@ -63,7 +63,7 @@ int test_client_thread(void *arg) {
     /*Client start*/
     zRPC_client_connect(client);
 
-    sleep(2);
+    sleep(10);
 
     volatile int i = 0;
     for (;;) {
