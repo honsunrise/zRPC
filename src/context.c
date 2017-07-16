@@ -161,10 +161,6 @@ void zRPC_context_destroy(zRPC_context *context) {
   zRPC_mutex_destroy(&context->global_mutex);
 }
 
-static void zRPC_context_run(zRPC_context *context, zRPC_runnable *runnable) {
-  zRPC_runnable_run(runnable);
-}
-
 void zRPC_context_dispatch(zRPC_context *context) {
   if (context->running_loop) {
     return;
@@ -207,7 +203,7 @@ void zRPC_context_dispatch(zRPC_context *context) {
         int write_ev = happen & (EV_WRITE);
         int error_ev = happen & (EV_ERROR);
         if (read_ev || write_ev || error_ev) {
-          zRPC_context_run(context, event->callback);
+          zRPC_runnable_run(event->callback);
         }
         event->event_status = EVS_REGISTER;
         if (!(event->event_type & EV_PERSIST)) {
@@ -216,7 +212,7 @@ void zRPC_context_dispatch(zRPC_context *context) {
         }
       } else if (event->event_type & EVENT_TYPE_TIMER_MASK) {
         if (happen & EV_TIMER || happen & EV_ERROR) {
-          zRPC_context_run(context, event->callback);
+          zRPC_runnable_run(event->callback);
         }
         event->event_status = EVS_REGISTER;
         if (!(event->event_type & EV_PERSIST)) {
