@@ -277,23 +277,19 @@ void *zRPC_channel_on_write(zRPC_channel *channel) {
 }
 
 void zRPC_channel_event_on_read(zRPC_channel *channel) {
-  zRPC_mutex_lock(&channel->lock);
   if (!channel->is_active) {
     channel->is_active = 1;
     zRPC_channel_on_active(channel);
   }
   zRPC_channel_on_read(channel);
-  zRPC_mutex_unlock(&channel->lock);
 }
 
 void zRPC_channel_event_on_write(zRPC_channel *channel) {
-  zRPC_mutex_lock(&channel->lock);
   if (!channel->is_active) {
     channel->is_active = 1;
     zRPC_channel_on_active(channel);
   }
   zRPC_channel_on_write(channel);
-  zRPC_mutex_unlock(&channel->lock);
 }
 
 static void channel_write_callback(zRPC_bytes_buf *buf) {
@@ -368,7 +364,5 @@ void zRPC_channel_write(zRPC_channel *channel, void *msg) {
   if (filter == NULL) {
     return;
   }
-  zRPC_mutex_lock(&channel->lock);
   help_call_write_filter(filter, channel, msg);
-  zRPC_mutex_unlock(&channel->lock);
 }
