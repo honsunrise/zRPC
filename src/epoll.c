@@ -109,7 +109,6 @@ static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_re
       return -1;
     return 0;
   }
-  *results = calloc(sizeof(zRPC_event_engine_result), (size_t) ep_rv);
   for (int i = 0, j = 0; i < ep_rv; ++i) {
     void *fd_info = ep_events[i].data.ptr;
     int close = ep_events[i].events & (EPOLLRDHUP);
@@ -132,9 +131,10 @@ static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_re
     if (res == 0) {
       continue;
     }
-    (*results)[i].event_type = (EVE_EVENT_TYPE) res;
-    (*results)[i].fd = ep_events->data.fd;
-    (*results)[i].fd_info = fd_info;
+    results[i] = malloc(sizeof(zRPC_event_engine_result));
+    results[i]->event_type = (EVE_EVENT_TYPE) res;
+    results[i]->fd = ep_events->data.fd;
+    results[i]->fd_info = fd_info;
   }
   return 0;
 }
