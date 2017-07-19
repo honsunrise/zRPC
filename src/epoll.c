@@ -10,11 +10,11 @@
 
 static void *initialize();
 
-static int add(void *engine_context, zRPC_event *event);
+static int add(void *engine_context, int fd, void *fd_info, EVE_EVENT_TYPE event_type);
 
-static int del(void *engine_context, zRPC_event *event);
+static int del(void *engine_context, int fd, EVE_EVENT_TYPE event_type);
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event *events[], size_t *nevents);
+static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -37,8 +37,7 @@ const zRPC_event_engine_vtable epoll_event_engine_vtable = {
     add,
     del,
     dispatch,
-    release,
-    sizeof(zRPC_epoll_context)
+    release
 };
 
 static void *initialize() {
@@ -56,59 +55,52 @@ static void release(void *engine_context) {
   }
 }
 
-static int add(void *engine_context, zRPC_event *event) {
+static int add(void *engine_context, int fd, void *fd_info, EVE_EVENT_TYPE event_type) {
   zRPC_epoll_context *epoll_context = engine_context;
-  if (!(event->event_status & EVS_INIT)) {
-    return -1;
-  }
-  struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd));
+  struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
   if (evs == NULL) {
     evs = malloc(sizeof(struct epoll_event));
-    evs->data.ptr = event;
+    evs->data.ptr = fd_info;
     evs->events = EPOLLET | EPOLLRDHUP | EPOLLERR;
-    if (event->event_type & EV_WRITE) {
+    if (event_type & EVE_WRITE) {
       evs->events |= EPOLLOUT;
     }
-    if (event->event_type & EV_READ) {
+    if (event_type & EVE_READ) {
       evs->events |= EPOLLIN;
     }
-    hashmapPut(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd), evs);
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, zRPC_fd_origin(event->fd), evs);
+    hashmapPut(epoll_context->ep_evs, (void *)fd, evs);
+    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, fd, evs);
   } else {
-    if (event->event_type & EV_WRITE) {
+    if (event_type & EVE_WRITE) {
       evs->events |= EPOLLOUT;
     }
-    if (event->event_type & EV_READ) {
+    if (event_type & EVE_READ) {
       evs->events |= EPOLLIN;
     }
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, zRPC_fd_origin(event->fd), evs);
+    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, fd, evs);
   }
-  event->event_status = EVS_REGISTER;
   return 0;
 }
 
-static int del(void *engine_context, zRPC_event *event) {
+static int del(void *engine_context, int fd, EVE_EVENT_TYPE event_type) {
   zRPC_epoll_context *epoll_context = engine_context;
-  if (!(event->event_status & EVS_REGISTER)) {
-    return -1;
-  }
-  struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) zRPC_fd_origin(event->fd));
-  if (event->event_type & EV_READ)
+  struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
+  if (event_type & EVE_READ)
     evs->events &= ~EPOLLIN;
-  if (event->event_type & EV_WRITE)
+  if (event_type & EVE_WRITE)
     evs->events &= ~EPOLLOUT;
   if (evs->events & (EPOLLIN | EPOLLOUT)) {
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, zRPC_fd_origin(event->fd), evs);
+    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, fd, evs);
     return 0;
   } else {
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, zRPC_fd_origin(event->fd), NULL);
+    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, fd, NULL);
     return 0;
   }
 }
 
 #define MAX_EVENTS 128
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event *events[], size_t *nevents_out) {
+static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event ep_events[MAX_EVENTS];
   int ep_rv = epoll_wait(epoll_context->ep_fd, ep_events, MAX_EVENTS, timeout);
@@ -117,31 +109,32 @@ static int dispatch(void *engine_context, uint32_t timeout, zRPC_event *events[]
       return -1;
     return 0;
   }
-
+  *results = calloc(sizeof(zRPC_event_engine_result), (size_t) ep_rv);
   for (int i = 0, j = 0; i < ep_rv; ++i) {
-    zRPC_event *event = ep_events[i].data.ptr;
+    void *fd_info = ep_events[i].data.ptr;
     int close = ep_events[i].events & (EPOLLRDHUP);
     int error = ep_events[i].events & (EPOLLERR | EPOLLHUP);
     int read_ev = ep_events[i].events & (EPOLLIN);
     int write_ev = ep_events[i].events & EPOLLOUT;
     int res = 0;
     if (read_ev) {
-      res |= EV_READ;
+      res |= EVE_READ;
     }
     if (write_ev) {
-      res |= EV_WRITE;
+      res |= EVE_WRITE;
     }
     if (error) {
-      res |= EV_ERROR;
+      res |= EVE_ERROR;
     }
     if (close) {
-      res |= EV_CLOSE;
+      res |= EVE_CLOSE;
     }
     if (res == 0) {
       continue;
     }
-    events[j++] = event;
-    *nevents_out = (size_t) j;
+    (*results)[i].event_type = (EVE_EVENT_TYPE) res;
+    (*results)[i].fd = ep_events->data.fd;
+    (*results)[i].fd_info = fd_info;
   }
   return 0;
 }
