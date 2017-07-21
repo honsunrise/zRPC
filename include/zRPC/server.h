@@ -14,7 +14,7 @@ extern "C" {
 
 typedef struct zRPC_server zRPC_server;
 
-zRPC_server *zRPC_server_create(struct zRPC_context *context, const char *addr, zRPC_pipe *pipe);
+zRPC_server *zRPC_server_create(struct zRPC_scheduler *context, const char *addr, zRPC_pipe *pipe);
 
 void zRPC_server_start(zRPC_server *server);
 
@@ -24,7 +24,7 @@ void zRPC_server_get_channels(zRPC_server *server, zRPC_channel ***out, unsigned
 
 zRPC_pipe *zRPC_server_get_pipe(zRPC_server *server);
 
-struct zRPC_context *zRPC_server_get_context(zRPC_server *server);
+struct zRPC_scheduler *zRPC_server_get_context(zRPC_server *server);
 
 #ifdef __cplusplus
 }

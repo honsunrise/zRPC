@@ -7,6 +7,6 @@
 
 #include "zRPC/fd.h"
 
-int zRPC_create_notifiable_fd(zRPC_sample_fd *fds[2]);
+int zRPC_create_notifiable_fd(zRPC_fd *fds[2]);
 
 #endif //ZRPC_FD_NOTIFIABLE_H

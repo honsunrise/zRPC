@@ -4,16 +4,16 @@
 
 #include <memory.h>
 #include <sys/poll.h>
-#include "zRPC/context.h"
-#include "zRPC/ds/hashmap.h"
+#include "zRPC/scheduling.h"
+#include "ds/hashmap.h"
 
 static void *initialize();
 
-static int add(void *engine_context, int fd, void *fd_info, EVE_EVENT_TYPE event_type);
+static int add(void *engine_context, int fd, void *fd_info, int event_type);
 
-static int del(void *engine_context, int fd, EVE_EVENT_TYPE event_type);
+static int del(void *engine_context, int fd);
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -64,7 +64,7 @@ static void release(void *engine_context) {
   }
 }
 
-static int add(void *engine_context, int fd, void *fd_info, EVE_EVENT_TYPE event_type) {
+static int add(void *engine_context, int fd, void *fd_info, int event_type) {
   zRPC_poll_context *poll_context = engine_context;
   short care = POLLERR | POLLHUP | POLLNVAL;
   if (event_type & EVE_WRITE) {
@@ -97,16 +97,9 @@ static int add(void *engine_context, int fd, void *fd_info, EVE_EVENT_TYPE event
   return 0;
 }
 
-static int del(void *engine_context, int fd, EVE_EVENT_TYPE event_type) {
+static int del(void *engine_context, int fd) {
   zRPC_poll_context *poll_context = engine_context;
   hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *)fd);
-  struct pollfd *pfd = &poll_context->fds[entry->poll_fds_index];
-  if (event_type & EVE_READ)
-    pfd->events &= ~POLLIN;
-  if (event_type & EVE_WRITE)
-    pfd->events &= ~POLLOUT;
-  if (pfd->events)
-    return 0;
   struct pollfd *move = &poll_context->fds[poll_context->nfds - 1];
   hashmap_entry *move_entry = hashmapGet(poll_context->fd_map, (void *) move->fd);
   assert(move_entry != NULL);
@@ -117,7 +110,7 @@ static int del(void *engine_context, int fd, EVE_EVENT_TYPE event_type) {
   return 0;
 }
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
   zRPC_poll_context *poll_context = engine_context;
 
   struct pollfd *event_set;
@@ -155,7 +148,7 @@ static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_re
       continue;
     }
     results[i] = malloc(sizeof(zRPC_event_engine_result));
-    results[i]->event_type = (EVE_EVENT_TYPE) res;
+    results[i]->event_type = res;
     results[i]->fd = entry->fd;
     results[i]->fd_info = fd_info;
   }

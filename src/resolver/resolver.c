@@ -7,19 +7,19 @@
 #include <unistd.h>
 #include "zRPC/support/socket_utils.h"
 #include "zRPC/support/string_utils.h"
-#include "zRPC/context.h"
+#include "zRPC/scheduling.h"
 
 static char *svc[][2] = {{"http",  "80"},
                          {"https", "443"}};
 
-void zRPC_resolver_init(zRPC_context *context) {
+void zRPC_resolver_init(zRPC_scheduler *context) {
     context->resolved_holder = malloc(sizeof(zRPC_resolved_holder));
     context->resolved_holder->resolved_cap = 10;
     context->resolved_holder->resolveds = malloc(sizeof(zRPC_resolved) * context->resolved_holder->resolved_cap);
     context->resolved_holder->resolved_count = 0;
 }
 
-void zRPC_resolver_shutdown(zRPC_context *context) {
+void zRPC_resolver_shutdown(zRPC_scheduler *context) {
 
 }
 
@@ -82,7 +82,7 @@ static void blocking_resolve_address_impl(const char *name, zRPC_inetaddres *add
 }
 
 typedef struct zRPC_resolved_param {
-    zRPC_context *context;
+    zRPC_scheduler *context;
     zRPC_resolved *resolved;
 } zRPC_resolved_param;
 
@@ -110,7 +110,7 @@ static void complete_runnable(void *arg) {
     free(resolved->inetaddres.addrs);
 }
 
-void zRPC_resolver_address(zRPC_context *context, const char *name, zRPC_resolver_complete_callback callback,
+void zRPC_resolver_address(zRPC_scheduler *context, const char *name, zRPC_resolver_complete_callback callback,
                            void *custom_arg) {
     zRPC_resolved *resolved = &context->resolved_holder->resolveds[context->resolved_holder->resolved_count];
     resolved->resolve_name = zRPC_str_dup(name);

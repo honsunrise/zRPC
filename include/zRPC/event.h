@@ -6,10 +6,8 @@
 #define ZRPC_EVENT_H
 
 #include <malloc.h>
-#include <zRPC/support/timer.h>
-#include "zRPC/ds/queue.h"
-#include "zRPC/ds/list.h"
-#include "fd.h"
+#include "ds/queue.h"
+#include "ds/list.h"
 
 typedef enum zRPC_EVENT_TYPE {
   EV_OPEN = 0x01,
@@ -17,8 +15,7 @@ typedef enum zRPC_EVENT_TYPE {
   EV_WRITE = 0x04,
   EV_CLOSE = 0x08,
   EV_TIMER = 0x10,
-  EV_ERROR = 0x20,
-  EV_PERSIST = 0x40,
+  EV_ERROR = 0x20
 } zRPC_EVENT_TYPE;
 
 #define EVENT_TYPE_FD_MASK (EV_OPEN | EV_READ | EV_WRITE | EV_CLOSE)
@@ -31,26 +28,19 @@ typedef enum zRPC_EVENT_STATUS {
 } zRPC_EVENT_STATUS;
 
 typedef struct zRPC_event {
-  union {
-    zRPC_sample_fd *fd;
-    zRPC_timer *timer;
-  };
-
   void *event_info;
-  int event_happen;
   zRPC_EVENT_TYPE event_type;
-  zRPC_EVENT_STATUS event_status;
-  zRPC_runnable *callback;
-  zRPC_list_head list_node_register;
-  zRPC_list_head list_node_active;
-  zRPC_list_head list_node_remove;
 } zRPC_event;
 
-typedef struct zRPC_pending_event {
-  zRPC_event *event;
-  int event_happen;
+typedef void (*zRPC_event_listener_callback)(void *source, zRPC_event event);
+
+typedef struct zRPC_event_listener {
+  int event_type;
+  int onece;
   zRPC_list_head list_node;
-} zRPC_pending_event;
+  zRPC_list_head remove_list_node;
+  zRPC_event_listener_callback callback;
+} zRPC_event_listener;
 
 /* THIS function work for zRPC_event */
 

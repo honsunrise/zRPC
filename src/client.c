@@ -9,7 +9,7 @@
 #include "zRPC/tcp_client.h"
 
 struct zRPC_client {
-    zRPC_context *context;
+    zRPC_scheduler *context;
     zRPC_pipe *pipe;
     zRPC_channel *channel;
     zRPC_tcp_client *tcp_client;
@@ -17,7 +17,7 @@ struct zRPC_client {
 };
 
 
-zRPC_client *zRPC_client_create(zRPC_context *context, const char *hostname, zRPC_pipe *pipe) {
+zRPC_client *zRPC_client_create(zRPC_scheduler *context, const char *hostname, zRPC_pipe *pipe) {
     zRPC_client *client = (zRPC_client *) malloc(sizeof(zRPC_client));
     client->context = context;
     client->pipe = pipe;
@@ -47,6 +47,6 @@ zRPC_channel *zRPC_client_get_channel(zRPC_client *client) {
     return client->channel;
 }
 
-zRPC_context *zRPC_client_get_context(zRPC_client *client) {
+zRPC_scheduler *zRPC_client_get_context(zRPC_client *client) {
     return client->context;
 }

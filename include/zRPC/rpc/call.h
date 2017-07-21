@@ -11,7 +11,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
-#include "zRPC/support/rtti.h"
+#include "../../../src/include/rtti.h"
 #include "zRPC/channel.h"
 #include "zRPC/support/lock.h"
 #include "zRPC/support/var_type.h"

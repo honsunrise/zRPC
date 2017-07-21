@@ -7,7 +7,7 @@
 #include "zRPC/tcp_server.h"
 
 struct zRPC_server {
-    struct zRPC_context *context;
+    struct zRPC_scheduler *context;
     zRPC_pipe *pipe;
     zRPC_channel **channel;
     unsigned int channel_cap;
@@ -17,7 +17,7 @@ struct zRPC_server {
 
 #define INIT_CHANNEL_COUNT 50
 
-zRPC_server *zRPC_server_create(struct zRPC_context *context, const char *addr, zRPC_pipe *pipe) {
+zRPC_server *zRPC_server_create(struct zRPC_scheduler *context, const char *addr, zRPC_pipe *pipe) {
     zRPC_server *server = (zRPC_server *) malloc(sizeof(zRPC_server));
     server->context = context;
     server->pipe = pipe;
@@ -50,7 +50,7 @@ void zRPC_server_get_channels(zRPC_server *server, zRPC_channel ***out, unsigned
     *count = server->channel_count;
 }
 
-struct zRPC_context *zRPC_server_get_context(zRPC_server *server) {
+struct zRPC_scheduler *zRPC_server_get_context(zRPC_server *server) {
     return server->context;
 }
 

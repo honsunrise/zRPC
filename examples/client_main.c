@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <zRPC/rpc/call.h>
 #include <zRPC/support/thread.h>
-#include <zRPC/context.h>
+#include <zRPC/scheduling.h>
 #include <zRPC/client.h>
 #include <zRPC/rpc/call_stub.h>
 
@@ -33,7 +33,7 @@ void caller_add(zRPC_channel *channel, int64_t a, int64_t b, int64_t *ret) {
 }
 
 typedef struct thread_param {
-    zRPC_context *context;
+    zRPC_scheduler *context;
 }thread_param;
 
 int test_client_thread(void *arg) {
@@ -80,7 +80,7 @@ int test_client_thread(void *arg) {
 int main(int argc, char **argv) {
     srand((unsigned int) time(NULL));
     /*Init context*/
-    zRPC_context *context = zRPC_context_create();
+    zRPC_scheduler *context = zRPC_context_create();
 
     thread_param *param = malloc(sizeof(thread_param));
     param->context = context;

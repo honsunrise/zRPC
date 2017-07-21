@@ -3,11 +3,11 @@
 //
 
 #include <boost/thread.hpp>
-#include "zRPC/context.h"
+#include "zRPC/scheduling.h"
 #include "gtest/gtest.h"
 
 static volatile int run_times = 0;
-void run(zRPC_context *context) {
+void run(zRPC_scheduler *context) {
     ++run_times;
     zRPC_runnable *runnable = zRPC_runnable_create((void *(*)(void *)) run, context, zRPC_runnable_release_callback);
     zRPC_timespec deadline = zRPC_now(zRPC_CLOCK_MONOTONIC);
@@ -20,7 +20,7 @@ TEST (TimerTest, PositiveNos) {
 }
 
 void test() {
-    zRPC_context *context = zRPC_context_create();
+    zRPC_scheduler *context = zRPC_context_create();
     zRPC_runnable *runnable = zRPC_runnable_create((void *(*)(void *)) run, context, zRPC_runnable_release_callback);
     zRPC_timespec deadline = zRPC_now(zRPC_CLOCK_MONOTONIC);
     deadline = zRPC_time_add(deadline, zRPC_time_from_seconds(1, zRPC_CLOCK_MONOTONIC));

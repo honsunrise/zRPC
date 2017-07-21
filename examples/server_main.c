@@ -37,7 +37,7 @@ test_node *getNode(int a) {
 
 int main(int argc, char **argv) {
     /*Init context*/
-    zRPC_context *context = zRPC_context_create();
+    zRPC_scheduler *context = zRPC_context_create();
 
     zRPC_function_table_item function_table_callee[] = {
             {"add", NULL, warp_callee_add}

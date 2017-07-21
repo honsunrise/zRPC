@@ -6,15 +6,15 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include "zRPC/event_engine.h"
-#include "zRPC/ds/hashmap.h"
+#include "ds/hashmap.h"
 
 static void *initialize();
 
-static int add(void *engine_context, int fd, void *fd_info, zRPC_EVE_EVENT_TYPE event_type);
+static int set(void *engine_context, int fd, void *fd_info, int event_type);
 
-static int del(void *engine_context, int fd, zRPC_EVE_EVENT_TYPE event_type);
+static int del(void *engine_context, int fd);
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -34,7 +34,7 @@ typedef struct zRPC_epoll_context {
 const zRPC_event_engine_vtable epoll_event_engine_vtable = {
     "epoll",
     initialize,
-    add,
+    set,
     del,
     dispatch,
     release
@@ -55,7 +55,7 @@ static void release(void *engine_context) {
   }
 }
 
-static int add(void *engine_context, int fd, void *fd_info, zRPC_EVE_EVENT_TYPE event_type) {
+static int set(void *engine_context, int fd, void *fd_info, int event_type) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
   if (evs == NULL) {
@@ -74,6 +74,7 @@ static int add(void *engine_context, int fd, void *fd_info, zRPC_EVE_EVENT_TYPE 
     hashmapPut(epoll_context->ep_evs, (void *)fd, evs);
     epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, fd, evs);
   } else {
+    evs->events = EPOLLET | EPOLLERR;
     if (event_type & EVE_WRITE) {
       evs->events |= EPOLLOUT;
     }
@@ -88,28 +89,16 @@ static int add(void *engine_context, int fd, void *fd_info, zRPC_EVE_EVENT_TYPE 
   return 0;
 }
 
-static int del(void *engine_context, int fd, zRPC_EVE_EVENT_TYPE event_type) {
+static int del(void *engine_context, int fd) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
-  evs->events &= ~(EPOLLET | EPOLLERR);
-  if (event_type & EVE_READ)
-    evs->events &= ~EPOLLIN;
-  if (event_type & EVE_WRITE)
-    evs->events &= ~EPOLLOUT;
-  if (event_type & EVE_WRITE)
-    evs->events &= ~EPOLLRDHUP;
-  if (evs->events & (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) {
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, fd, evs);
-    return 0;
-  } else {
-    epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, fd, NULL);
-    return 0;
-  }
+  epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, fd, NULL);
+  return 0;
 }
 
 #define MAX_EVENTS 128
 
-static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event ep_events[MAX_EVENTS];
   int ep_rv = epoll_wait(epoll_context->ep_fd, ep_events, MAX_EVENTS, timeout);
@@ -141,7 +130,7 @@ static int dispatch(void *engine_context, uint32_t timeout, zRPC_event_engine_re
       continue;
     }
     results[i] = malloc(sizeof(zRPC_event_engine_result));
-    results[i]->event_type = (zRPC_EVE_EVENT_TYPE) res;
+    results[i]->event_type = res;
     results[i]->fd = ep_events->data.fd;
     results[i]->fd_info = fd_info;
   }

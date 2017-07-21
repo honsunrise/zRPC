@@ -2,7 +2,7 @@
 // Created by zhsyourai on 1/22/17.
 //
 
-#include "zRPC/context.h"
+#include "zRPC/scheduling.h"
 #include "gtest/gtest.h"
 #include <boost/thread.hpp>
 
@@ -13,7 +13,7 @@ void resolver_complete_callback(void *custom_arg, zRPC_resolved *resolved) {
 
 void test() {
     const char *hostname = "www.google.com:80";
-    zRPC_context *context = zRPC_context_create();
+    zRPC_scheduler *context = zRPC_context_create();
     zRPC_resolver_address(context, hostname, resolver_complete_callback, NULL);
     zRPC_context_dispatch(context);
 }

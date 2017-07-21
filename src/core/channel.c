@@ -3,10 +3,10 @@
 //
 
 #include <malloc.h>
+#include "ds/ring_buf.h"
 #include "zRPC/support/useful.h"
-#include "zRPC/context.h"
+#include "zRPC/scheduling.h"
 #include "zRPC/channel.h"
-#include "zRPC/ds/ring_buf.h"
 #include "zRPC/support/bytes_buf.h"
 
 /* Call filter function */
@@ -47,11 +47,11 @@ typedef struct zRPC_channel_write_param {
 } zRPC_channel_write_param;
 
 struct zRPC_channel {
-  zRPC_context *context;
+  zRPC_scheduler *context;
   zRPC_pipe *pipe;
   zRPC_filter_linked_node *head;
   zRPC_filter_linked_node *tail;
-  zRPC_sample_fd *fd;
+  zRPC_fd *fd;
   zRPC_ring_buffer *buffer;
   int is_active;
   void *custom_data;
@@ -118,7 +118,7 @@ void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter
   pipe->filters--;
 }
 
-void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_sample_fd *fd, zRPC_context *context) {
+void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_scheduler *context) {
   zRPC_channel *channel = (zRPC_channel *) malloc(sizeof(zRPC_channel));
   channel->pipe = pipe;
   channel->tail = channel->head = NULL;
@@ -176,7 +176,7 @@ void *zRPC_channel_get_custom_data(zRPC_channel *channel) {
   return channel->custom_data;
 }
 
-zRPC_sample_fd *zRPC_channel_get_fd(zRPC_channel *channel) {
+zRPC_fd *zRPC_channel_get_fd(zRPC_channel *channel) {
   return channel->fd;
 }
 

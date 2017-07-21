@@ -3,7 +3,7 @@
 //
 #include <netdb.h>
 #include <malloc.h>
-#include "zRPC/context.h"
+#include "zRPC/scheduling.h"
 #include "zRPC/server.h"
 #include "zRPC/tcp_server.h"
 
@@ -11,7 +11,7 @@ typedef struct zRPC_listener {
     struct zRPC_tcp_server *server;
     struct zRPC_listener *next;
     struct zRPC_listener *sibling;
-    zRPC_sample_fd *fd;
+    zRPC_fd *fd;
     int is_sibling;
     int is_reuse_port;
     zRPC_inetaddr address;
@@ -106,16 +106,16 @@ static void *warp_fd_callback(void *origin_arg) {
 
 struct child_thread_param {
     zRPC_server *server;
-    zRPC_sample_fd *new_fd;
+    zRPC_fd *new_fd;
 };
 
 static int child_io_thread(void *arg) {
     struct child_thread_param *param = arg;
     zRPC_server *server = param->server;
-    zRPC_sample_fd *new_fd = param->new_fd;
+    zRPC_fd *new_fd = param->new_fd;
     free(param);
 
-    zRPC_context *context = zRPC_context_create();
+    zRPC_scheduler *context = zRPC_context_create();
     zRPC_channel *channel;
     zRPC_channel_create(&channel, zRPC_server_get_pipe(server), new_fd, context);
 
@@ -145,7 +145,7 @@ static void *on_read(void *arg) {
     zRPC_listener *listener = arg;
     zRPC_tcp_server *tcp_server = listener->server;
     zRPC_server *server = tcp_server->server;
-    zRPC_sample_fd *fd;
+    zRPC_fd *fd;
 
     /* loop until accept4 returns EAGAIN, and then re-arm notification */
     for (;;) {

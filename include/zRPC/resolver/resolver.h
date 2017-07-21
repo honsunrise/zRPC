@@ -31,11 +31,11 @@ typedef struct zRPC_resolved_holder {
 } zRPC_resolved_holder;
 
 
-void zRPC_resolver_init(struct zRPC_context *context);
+void zRPC_resolver_init(struct zRPC_scheduler *context);
 
-void zRPC_resolver_shutdown(struct zRPC_context *context);
+void zRPC_resolver_shutdown(struct zRPC_scheduler *context);
 
-void zRPC_resolver_address(struct zRPC_context *context, const char *name, zRPC_resolver_complete_callback callback,
+void zRPC_resolver_address(struct zRPC_scheduler *context, const char *name, zRPC_resolver_complete_callback callback,
                            void *custom_arg);
 
 #ifdef __cplusplus

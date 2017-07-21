@@ -6,7 +6,7 @@
 #include "zRPC/filter/msgpack_filter.h"
 #include "zRPC/support/string_utils.h"
 #include "zRPC/support/bytes_buf.h"
-#include "zRPC/support/rtti.h"
+#include "../include/rtti.h"
 #include "zRPC/rpc/call.h"
 
 

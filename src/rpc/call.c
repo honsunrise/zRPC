@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include "zRPC/rpc/call.h"
-#include "zRPC/support/rtti.h"
+#include "../include/rtti.h"
 
 struct zRPC_callback_desc {
 

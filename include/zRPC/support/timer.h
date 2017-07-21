@@ -11,36 +11,38 @@ extern "C" {
 
 #include "time.h"
 #include "runnable.h"
+#include "source.h"
 
 typedef struct zRPC_timer {
-    zRPC_timespec deadline;
-    uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
-    int triggered;
-    struct zRPC_timer *next;
-    struct zRPC_timer *prev;
-    zRPC_runnable *runnable;
+  zRPC_event_source source;
+  zRPC_timespec deadline;
+  uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
+  int triggered;
+  struct zRPC_timer *next;
+  struct zRPC_timer *prev;
+  zRPC_runnable *runnable;
 } zRPC_timer;
 
 typedef struct zRPC_timer_holder zRPC_timer_holder;
 
-struct zRPC_context;
+struct zRPC_scheduler;
 
-zRPC_timer *zRPC_timer_schedule(struct zRPC_context *context, zRPC_timespec deadline, zRPC_runnable *runnable);
+zRPC_timer *zRPC_timer_schedule(struct zRPC_scheduler *context, zRPC_timespec deadline, zRPC_runnable *runnable);
 
-zRPC_timer *zRPC_timer_schedule_now(struct zRPC_context *context, zRPC_timespec deadline, zRPC_runnable *runnable,
+zRPC_timer *zRPC_timer_schedule_now(struct zRPC_scheduler *context, zRPC_timespec deadline, zRPC_runnable *runnable,
                                     zRPC_timespec now);
 
-void zRPC_timer_canael(struct zRPC_context *context, zRPC_timer *timer);
+void zRPC_timer_canael(struct zRPC_scheduler *context, zRPC_timer *timer);
 
-void zRPC_timer_init(struct zRPC_context *context);
+void zRPC_timer_init(struct zRPC_scheduler *context);
 
-void zRPC_timer_shutdown(struct zRPC_context *context);
+void zRPC_timer_shutdown(struct zRPC_scheduler *context);
 
-void zRPC_timer_next_timeout(struct zRPC_context *context, zRPC_timespec *ts);
+void zRPC_timer_next_timeout(struct zRPC_scheduler *context, zRPC_timespec *ts);
 
-int zRPC_timer_run_some_expired_timers(struct zRPC_context *context);
+int zRPC_timer_run_some_expired_timers(struct zRPC_scheduler *context);
 
-int zRPC_timer_run_some_expired_timers_now(struct zRPC_context *context, zRPC_timespec now);
+int zRPC_timer_run_some_expired_timers_now(struct zRPC_scheduler *context, zRPC_timespec now);
 
 #ifdef __cplusplus
 }
