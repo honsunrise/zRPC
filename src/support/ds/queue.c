@@ -4,13 +4,13 @@
 
 #include <malloc.h>
 #include <memory.h>
-#include "zRPC/ds/queue.h"
+#include "ds/queue.h"
 
 /* this number for programmer day*/
 #define MAX_QUEUE_CAP 1024
 
 struct zRPC_queue {
-    zRPC_runnable *entities[MAX_QUEUE_CAP];
+    void *entities[MAX_QUEUE_CAP];
     unsigned int cap;
     int front;
     int rear;

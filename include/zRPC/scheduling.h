@@ -12,25 +12,22 @@ extern "C" {
 #include "ds/list.h"
 #include "zRPC/support/lock.h"
 #include "zRPC/support/runnable.h"
-#include "zRPC/support/timer.h"
+#include "timer.h"
 #include "event_engine.h"
 #include "zRPC/resolver/resolver.h"
 
 typedef struct zRPC_scheduler {
   zRPC_mutex global_mutex;
   zRPC_cond global_cond;
-  zRPC_list_head source_list;
-  zRPC_list_head source_active;
-  uint32_t source_active_count;
   void *event_engine_context;
   const zRPC_event_engine_vtable *event_engine;
   zRPC_timer_holder *timer_holder;
-  zRPC_fd *notify_fd[2];
-  zRPC_runnable *notify_runnable;
-  int is_notify_pending;
   int running_loop;
   zRPC_timespec ts_cache;
   zRPC_thread_id owner_thread_id;
+  zRPC_queue *event_queue;
+  zRPC_cond event_queue_cond;
+  zRPC_mutex event_queue_mutex;
 } zRPC_scheduler;
 
 zRPC_scheduler *zRPC_scheduler_create();
@@ -38,8 +35,6 @@ zRPC_scheduler *zRPC_scheduler_create();
 int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source *source);
 
 int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_source *source);
-
-void zRPC_scheduler_event_happen(zRPC_scheduler *scheduler, zRPC_event *event);
 
 void zRPC_scheduler_notify(zRPC_scheduler *scheduler);
 

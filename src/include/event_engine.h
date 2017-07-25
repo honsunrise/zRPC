@@ -27,12 +27,14 @@ typedef struct zRPC_event_engine_vtable {
 
   int (*del)(void *engine_context, int fd);
 
-  int (*dispatch)(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
+  int (*dispatch)(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
   void (*release)(void *engine_context);
 } zRPC_event_engine_vtable;
 
-inline void zRPC_event_engine_release_result(zRPC_event_engine_result *results, size_t nresults) {
-
+inline void zRPC_event_engine_release_result(zRPC_event_engine_result *results[], size_t nresults) {
+  for (int i = 0; i < nresults; ++i) {
+    free(results[i]);
+  }
 }
 #endif //ZRPC_EVENT_ENGINE_H

@@ -5,8 +5,6 @@
 #ifndef ZRPC_WORK_QUEUE_H
 #define ZRPC_WORK_QUEUE_H
 
-#include "zRPC/support/runnable.h"
-
 typedef struct zRPC_queue zRPC_queue;
 
 int zRPC_queue_create(zRPC_queue **queue);

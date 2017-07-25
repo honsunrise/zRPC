@@ -2,7 +2,6 @@
 // Created by zhsyourai on 7/21/17.
 //
 
-#include "zRPC/event.h"
 #include "source.h"
 static void _emit_event_callback(zRPC_event_source *source, zRPC_event event) {
   zRPC_list_head *pos;
@@ -30,6 +29,7 @@ static void _emit_event_callback(zRPC_event_source *source, zRPC_event event) {
 
 void zRPC_source_init(zRPC_event_source *source) {
   source->emit = _emit_event_callback;
+  source->key = (int) source;
   zRPC_list_init(&source->event_listener_list);
   zRPC_list_init(&source->event_listener_remove_list);
 }

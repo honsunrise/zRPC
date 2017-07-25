@@ -46,6 +46,10 @@ int zRPC_set_socket_recvbuf(int sockfd, int size);
 
 int zRPC_create_socket_pair(int domain, int type, int protocol, int fds[2]);
 
+ssize_t zRPC_socket_read(int sockfd, void *buf, size_t len);
+
+ssize_t zRPC_socket_write(int sockfd, void *buf, size_t len);
+
 typedef enum zRPC_socket_mode {
     ZRPC_SOCKET_NONE,
     ZRPC_SOCKET_IPV4,

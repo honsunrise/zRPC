@@ -3,13 +3,12 @@
 //
 
 #include "zRPC/support/lock.h"
-#include "zRPC/support/timer.h"
+#include "zRPC/timer.h"
 #include "zRPC/scheduling.h"
 #include "../include/timer_heap.h"
 #include "../include/rtti.h"
 
 struct zRPC_timer_holder {
-  DECLARE_RTTI(zRPC_sample_fd);
   zRPC_mutex mutex;
   zRPC_mutex run_mutex;
   zRPC_timer_heap heap;

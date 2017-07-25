@@ -3,10 +3,10 @@
 //
 
 #include <malloc.h>
-#include "ds/ring_buf.h"
-#include "zRPC/support/useful.h"
-#include "zRPC/scheduling.h"
-#include "zRPC/channel.h"
+#include <assert.h>
+#include "rtti.h"
+#include "channel.h"
+#include "zRPC/support/socket_utils.h"
 #include "zRPC/support/bytes_buf.h"
 
 /* Call filter function */
@@ -18,24 +18,13 @@ void zRPC_filter_call_on_read(struct zRPC_filter *filter, zRPC_channel *channel,
 
 void zRPC_filter_call_on_write(struct zRPC_filter *filter, zRPC_channel *channel, void *msg, zRPC_filter_out *out);
 
-typedef struct zRPC_filter_factory_linked_node {
-  const char *name;
-  struct zRPC_filter_factory_linked_node *next;
-  struct zRPC_filter_factory_linked_node *prev;
-  struct zRPC_filter_factory *filter_factory;
-} zRPC_filter_factory_linked_node;
+static void *_channel_on_active(zRPC_channel *channel);
 
-struct zRPC_pipe {
-  zRPC_filter_factory_linked_node *head;
-  zRPC_filter_factory_linked_node *tail;
-  int filters;
-};
+static void *_channel_on_read(zRPC_channel *channel);
 
-typedef struct zRPC_filter_linked_node {
-  struct zRPC_filter_linked_node *next;
-  struct zRPC_filter_linked_node *prev;
-  struct zRPC_filter *filter;
-} zRPC_filter_linked_node;
+static void *_channel_on_write(zRPC_channel *channel);
+
+static void *_channel_on_inactive(zRPC_channel *channel);
 
 typedef struct zRPC_channel_write_param {
   size_t write_remained;
@@ -45,22 +34,6 @@ typedef struct zRPC_channel_write_param {
   zRPC_list_head list_node_pending;
   zRPC_list_head list_node_done;
 } zRPC_channel_write_param;
-
-struct zRPC_channel {
-  zRPC_scheduler *context;
-  zRPC_pipe *pipe;
-  zRPC_filter_linked_node *head;
-  zRPC_filter_linked_node *tail;
-  zRPC_fd *fd;
-  zRPC_ring_buffer *buffer;
-  int is_active;
-  void *custom_data;
-  int is_writing;
-  zRPC_list_head pending_write;
-  zRPC_list_head done_write;
-  zRPC_mutex write_lock;
-  zRPC_mutex read_lock;
-};
 
 void zRPC_pipe_create(zRPC_pipe **out) {
   zRPC_pipe *pipe = (zRPC_pipe *) malloc(sizeof(zRPC_pipe));
@@ -110,7 +83,7 @@ void zRPC_pipe_add_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter_fa
   pipe->filters++;
 }
 
-void zRPC_pipe_remove_fileter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory **filter_factory) {
+void zRPC_pipe_remove_filter_by_name(zRPC_pipe *pipe, const char *name, struct zRPC_filter_factory **filter_factory) {
   pipe->filters--;
 }
 
@@ -118,8 +91,52 @@ void zRPC_pipe_remove_filter(zRPC_pipe *pipe, struct zRPC_filter_factory *filter
   pipe->filters--;
 }
 
-void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_scheduler *context) {
+static void _event_on_read(zRPC_channel *channel) {
+  zRPC_mutex_lock(&channel->read_lock);
+  if (!channel->is_active) {
+    channel->is_active = 1;
+    _channel_on_active(channel);
+  }
+  _channel_on_read(channel);
+  zRPC_mutex_unlock(&channel->read_lock);
+}
+
+static void _event_on_write(zRPC_channel *channel) {
+  zRPC_mutex_lock(&channel->write_lock);
+  if (!channel->is_active) {
+    channel->is_active = 1;
+    _channel_on_active(channel);
+  }
+  _channel_on_write(channel);
+  zRPC_mutex_unlock(&channel->write_lock);
+}
+
+static void _event_listener_callback(void *source, zRPC_event event) {
+  switch (event.event_type) {
+    case EV_WRITE:
+      _channel_on_write(source);
+      break;
+    case EV_READ:
+      _channel_on_read(source);
+      break;
+    case EV_CLOSE:
+      _channel_on_inactive(source);
+      break;
+    case EV_OPEN:
+      _channel_on_active(source);
+      break;
+    case EV_ERROR:
+      break;
+    default:
+      assert(0);
+      break;
+  }
+}
+
+void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_scheduler *scheduler) {
   zRPC_channel *channel = (zRPC_channel *) malloc(sizeof(zRPC_channel));
+  RTTI_INIT_PTR(zRPC_channel, &channel->source);
+  zRPC_source_init(&channel->source);
   channel->pipe = pipe;
   channel->tail = channel->head = NULL;
   zRPC_filter_factory_linked_node *head = channel->pipe->head;
@@ -140,7 +157,7 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
     head = head->next;
   }
   channel->fd = fd;
-  channel->context = context;
+  channel->scheduler = scheduler;
   channel->is_active = 0;
   channel->is_writing = 0;
   zRPC_mutex_init(&channel->write_lock);
@@ -148,13 +165,14 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, zRPC_fd *fd, zRPC_
   zRPC_list_init(&channel->pending_write);
   zRPC_list_init(&channel->done_write);
   zRPC_ring_buf_create(&channel->buffer, 4096);
+  zRPC_scheduler_register_source(scheduler, &channel->source);
+  zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
+  zRPC_source_register_listener(&channel->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _event_listener_callback);
   *out = channel;
 }
 
 void zRPC_channel_destroy(zRPC_channel *channel) {
   if (channel != NULL) {
-    zRPC_fd_close(channel->fd);
-    zRPC_fd_destroy(channel->fd);
     zRPC_filter_linked_node *head = channel->head;
     zRPC_filter_linked_node *node;
     while (head != NULL) {
@@ -163,7 +181,7 @@ void zRPC_channel_destroy(zRPC_channel *channel) {
       head = head->next;
       free(node);
     }
-    zRPC_context_unregister_event_fd(channel->context, channel->fd);
+    zRPC_scheduler_unregister_source(channel->scheduler, &channel->source);
     free(channel);
   }
 }
@@ -174,19 +192,6 @@ void zRPC_channel_set_custom_data(zRPC_channel *channel, void *custom_data) {
 
 void *zRPC_channel_get_custom_data(zRPC_channel *channel) {
   return channel->custom_data;
-}
-
-zRPC_fd *zRPC_channel_get_fd(zRPC_channel *channel) {
-  return channel->fd;
-}
-
-void *zRPC_channel_on_active(zRPC_channel *channel) {
-  zRPC_filter_linked_node *filter = channel->head;
-  while (filter != NULL) {
-    zRPC_filter_call_on_active(filter->filter, channel);
-    filter = filter->next;
-  }
-  return NULL;
 }
 
 static void help_call_read_filter(zRPC_filter_linked_node *filter, zRPC_channel *channel, void *msg) {
@@ -200,7 +205,25 @@ static void help_call_read_filter(zRPC_filter_linked_node *filter, zRPC_channel 
   zRPC_filter_out_destroy(out);
 }
 
-void *zRPC_channel_on_read(zRPC_channel *channel) {
+void *_channel_on_active(zRPC_channel *channel) {
+  zRPC_filter_linked_node *filter = channel->head;
+  while (filter != NULL) {
+    zRPC_filter_call_on_active(filter->filter, channel);
+    filter = filter->next;
+  }
+  return NULL;
+}
+
+void *_channel_on_inactive(zRPC_channel *channel) {
+  zRPC_filter_linked_node *filter = channel->head;
+  while (filter != NULL) {
+    zRPC_filter_call_on_inactive(filter->filter, channel);
+    filter = filter->next;
+  }
+  return NULL;
+}
+
+void *_channel_on_read(zRPC_channel *channel) {
   char temp[1024];
   ssize_t total_read, read, write;
   total_read = 0;
@@ -208,13 +231,12 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
     read = MIN(zRPC_ring_buf_can_write(channel->buffer), 1024);
     if (read == 0)
       break;
-    read = zRPC_fd_read(channel->fd, temp, (size_t) read);
+    read = zRPC_socket_read(channel->fd, temp, (size_t) read);
     if (read <= 0) {
       if (channel->is_active) {
         channel->is_active = 0;
-        zRPC_channel_on_inactive(channel);
+        _channel_on_inactive(channel);
       }
-      zRPC_channel_destroy(channel);
       return NULL;
     }
     if (read >= 0) {
@@ -232,16 +254,7 @@ void *zRPC_channel_on_read(zRPC_channel *channel) {
   return NULL;
 }
 
-void *zRPC_channel_on_inactive(zRPC_channel *channel) {
-  zRPC_filter_linked_node *filter = channel->head;
-  while (filter != NULL) {
-    zRPC_filter_call_on_inactive(filter->filter, channel);
-    filter = filter->next;
-  }
-  return NULL;
-}
-
-void *zRPC_channel_on_write(zRPC_channel *channel) {
+void *_channel_on_write(zRPC_channel *channel) {
   zRPC_list_head *pos;
   zRPC_list_for_each(pos, &channel->pending_write) {
     zRPC_channel_write_param *write_param = zRPC_list_entry(pos, zRPC_channel_write_param, list_node_pending);
@@ -249,13 +262,13 @@ void *zRPC_channel_on_write(zRPC_channel *channel) {
       goto gone;
     }
 
-    ssize_t sent = zRPC_fd_write(zRPC_channel_get_fd(channel),
+    ssize_t sent = zRPC_socket_write(channel->fd,
                                  zRPC_bytes_buf_addr(write_param->outgoing_buf) + write_param->outgoing_buf_len -
                                      write_param->write_remained, write_param->write_remained);
     if (sent < 0) {
       if (channel->is_active) {
         channel->is_active = 0;
-        zRPC_channel_on_inactive(channel);
+        _channel_on_inactive(channel);
       }
       goto gone;
     }
@@ -278,26 +291,6 @@ void *zRPC_channel_on_write(zRPC_channel *channel) {
   return NULL;
 }
 
-void zRPC_channel_event_on_read(zRPC_channel *channel) {
-  zRPC_mutex_lock(&channel->read_lock);
-  if (!channel->is_active) {
-    channel->is_active = 1;
-    zRPC_channel_on_active(channel);
-  }
-  zRPC_channel_on_read(channel);
-  zRPC_mutex_unlock(&channel->read_lock);
-}
-
-void zRPC_channel_event_on_write(zRPC_channel *channel) {
-  zRPC_mutex_lock(&channel->write_lock);
-  if (!channel->is_active) {
-    channel->is_active = 1;
-    zRPC_channel_on_active(channel);
-  }
-  zRPC_channel_on_write(channel);
-  zRPC_mutex_unlock(&channel->write_lock);
-}
-
 static void channel_write_callback(zRPC_bytes_buf *buf) {
   SUB_REFERENCE(buf, zRPC_bytes_buf);
 }
@@ -314,14 +307,14 @@ static void zRPC_channel_really_write(zRPC_channel *channel, zRPC_filter_out *ou
 
     if (!channel->is_writing) {
       channel->is_writing = 1;
-      ssize_t sent = zRPC_fd_write(zRPC_channel_get_fd(channel),
+      ssize_t sent = zRPC_socket_write(channel->fd,
                                    zRPC_bytes_buf_addr(write_param->outgoing_buf) +
                                        write_param->outgoing_buf_len -
                                        write_param->write_remained, write_param->write_remained);
       if (sent < 0) {
         if (channel->is_active) {
           channel->is_active = 0;
-          zRPC_channel_on_inactive(channel);
+          _channel_on_inactive(channel);
         }
         if (write_param->write_callback != NULL) {
           zRPC_runnable_run(write_param->write_callback);
@@ -330,22 +323,12 @@ static void zRPC_channel_really_write(zRPC_channel *channel, zRPC_filter_out *ou
       } else {
         write_param->write_remained -= sent;
         zRPC_list_add_tail(&write_param->list_node_pending, &channel->pending_write);
-        zRPC_runnable *on_write =
-            zRPC_runnable_create((void *(*)(void *)) zRPC_channel_event_on_write, channel,
-                                 zRPC_runnable_release_callback);
-        zRPC_event *event = zRPC_event_create(zRPC_channel_get_fd(channel), EV_WRITE, on_write);
-        zRPC_context_register_event(channel->context, event);
-        zRPC_context_notify(channel->context);
+        zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
       }
       channel->is_writing = 0;
     } else {
       zRPC_list_add_tail(&write_param->list_node_pending, &channel->pending_write);
-      zRPC_runnable *on_write =
-          zRPC_runnable_create((void *(*)(void *)) zRPC_channel_event_on_write, channel,
-                               zRPC_runnable_release_callback);
-      zRPC_event *event = zRPC_event_create(zRPC_channel_get_fd(channel), EV_WRITE, on_write);
-      zRPC_context_register_event(channel->context, event);
-      zRPC_context_notify(channel->context);
+      zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
     }
   }
 }

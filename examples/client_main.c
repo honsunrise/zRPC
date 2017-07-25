@@ -79,7 +79,7 @@ int test_client_thread(void *arg) {
 
 int main(int argc, char **argv) {
     srand((unsigned int) time(NULL));
-    /*Init context*/
+    /*Init scheduler*/
     zRPC_scheduler *context = zRPC_context_create();
 
     thread_param *param = malloc(sizeof(thread_param));
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     zRPC_thread_id thread_id;
     zRPC_thread_create(&thread_id, test_client_thread, param, PTHREAD_CREATE_DETACHED);
 
-    /*Dispatch context*/
+    /*Dispatch scheduler*/
     zRPC_context_dispatch(context);
 
     free(param);

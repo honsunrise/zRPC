@@ -4,9 +4,9 @@
 
 #include <sys/socket.h>
 #include "zRPC/support/socket_utils.h"
-#include "../include/fd_notifiable.h"
+#include "fd_notifiable.h"
 
-int zRPC_create_notifiable_fd(zRPC_fd *fds[2]) {
+int zRPC_create_notifiable_fd(int fds[2]) {
     int fd[2];
     fds[0] = NULL;
     fds[1] = NULL;
@@ -20,10 +20,17 @@ int zRPC_create_notifiable_fd(zRPC_fd *fds[2]) {
             fd[0] = fd[1] = -1;
             return -1;
         }
-        fds[0] = zRPC_fd_create(fd[0]);
-        fds[1] = zRPC_fd_create(fd[1]);
+        fds[0] = fd[0];
+        fds[1] = fd[1];
         return 0;
     }
     fd[0] = fd[1] = -1;
     return -1;
+}
+
+
+int zRPC_destroy_notifiable_fd(int fds[2]) {
+    close(fds[0]);
+    close(fds[1]);
+    return 0;
 }

@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "zRPC/support/timer.h"
+#include "zRPC/timer.h"
 
 typedef struct zRPC_timer_heap {
     zRPC_timer **timers;

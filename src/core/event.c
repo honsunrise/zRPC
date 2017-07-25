@@ -2,7 +2,7 @@
 // Created by zhsyourai on 12/6/16.
 //
 
-#include "zRPC/event.h"
+#include "event.h"
 
 zRPC_event *zRPC_event_create(void *target,
                               zRPC_EVENT_TYPE event_type,

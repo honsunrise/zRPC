@@ -13,7 +13,7 @@ static int add(void *engine_context, int fd, void *fd_info, int event_type);
 
 static int del(void *engine_context, int fd);
 
-static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -110,7 +110,7 @@ static int del(void *engine_context, int fd) {
   return 0;
 }
 
-static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults) {
   zRPC_poll_context *poll_context = engine_context;
 
   struct pollfd *event_set;
@@ -122,7 +122,7 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
       return -1;
     return 0;
   }
-
+  *results = calloc((size_t) p_rv, sizeof(**results));
   int i = 0;
   for (int j = 0; j < nfds; j++) {
     int happen = event_set[j].revents;
@@ -147,10 +147,11 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
     if (res == 0) {
       continue;
     }
-    results[i] = malloc(sizeof(zRPC_event_engine_result));
-    results[i]->event_type = res;
-    results[i]->fd = entry->fd;
-    results[i]->fd_info = fd_info;
+    (*results)[i] = malloc(sizeof(zRPC_event_engine_result));
+    (*results)[i]->event_type = res;
+    (*results)[i]->fd = entry->fd;
+    (*results)[i]->fd_info = fd_info;
   }
+  *nresults = (size_t) p_rv;
   return 0;
 }

@@ -9,15 +9,15 @@
 extern "C" {
 #endif
 
-#include "time.h"
-#include "runnable.h"
+#include "zRPC/support/time.h"
+#include "zRPC/support/runnable.h"
 #include "source.h"
 
 typedef struct zRPC_timer {
   zRPC_event_source source;
   zRPC_timespec deadline;
-  uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
   int triggered;
+  uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
   struct zRPC_timer *next;
   struct zRPC_timer *prev;
   zRPC_runnable *runnable;

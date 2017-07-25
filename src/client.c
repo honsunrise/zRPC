@@ -4,7 +4,7 @@
 
 #include "zRPC/support/socket_utils.h"
 #include "zRPC/support/string_utils.h"
-#include "zRPC/support/timer.h"
+#include "zRPC/timer.h"
 #include "zRPC/client.h"
 #include "zRPC/tcp_client.h"
 

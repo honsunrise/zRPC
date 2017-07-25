@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include "zRPC/event_engine.h"
+#include "event_engine.h"
 #include "ds/hashmap.h"
 
 static void *initialize();
@@ -14,7 +14,7 @@ static int set(void *engine_context, int fd, void *fd_info, int event_type);
 
 static int del(void *engine_context, int fd);
 
-static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults);
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -98,7 +98,7 @@ static int del(void *engine_context, int fd) {
 
 #define MAX_EVENTS 128
 
-static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result *results[], size_t *nresults) {
+static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event ep_events[MAX_EVENTS];
   int ep_rv = epoll_wait(epoll_context->ep_fd, ep_events, MAX_EVENTS, timeout);
@@ -107,6 +107,7 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
       return -1;
     return 0;
   }
+  *results = calloc((size_t) ep_rv, sizeof(**results));
   for (int i = 0, j = 0; i < ep_rv; ++i) {
     void *fd_info = ep_events[i].data.ptr;
     int close = ep_events[i].events & (EPOLLRDHUP);
@@ -129,10 +130,11 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
     if (res == 0) {
       continue;
     }
-    results[i] = malloc(sizeof(zRPC_event_engine_result));
-    results[i]->event_type = res;
-    results[i]->fd = ep_events->data.fd;
-    results[i]->fd_info = fd_info;
+    (*results)[i] = malloc(sizeof(zRPC_event_engine_result));
+    (*results)[i]->event_type = res;
+    (*results)[i]->fd = ep_events->data.fd;
+    (*results)[i]->fd_info = fd_info;
   }
+  *nresults = (size_t) ep_rv;
   return 0;
 }

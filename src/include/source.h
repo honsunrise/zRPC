@@ -6,6 +6,8 @@
 #define ZRPC_SOURCE_H
 
 #include "ds/list.h"
+#include "event.h"
+#include "rtti.h"
 struct zRPC_event_source;
 
 typedef void (*zRPC_notify_listener_change)(void *notify_param, struct zRPC_event_source *source, zRPC_list_head *event_listener_list);
@@ -13,14 +15,15 @@ typedef void (*zRPC_notify_listener_change)(void *notify_param, struct zRPC_even
 typedef void (*zRPC_emit_event)(struct zRPC_event_source *source, zRPC_event event);
 
 typedef struct zRPC_event_source {
-  DECLARE_RTTI();
-  zRPC_list_head source_list_node;
+  DECLARE_RTTI;
   zRPC_list_head event_listener_list;
   zRPC_list_head event_listener_remove_list;
   zRPC_notify_listener_change notify;
   void *notify_param;
   zRPC_emit_event emit;
   int attention_event;
+  // DO NOT MOVE THIS FIELD
+  int key;
 } zRPC_event_source;
 
 void zRPC_source_init(zRPC_event_source *source);
