@@ -14,6 +14,7 @@ extern "C" {
 #include "zRPC/support/runnable.h"
 #include "timer.h"
 #include "event_engine.h"
+#include "timer_engine.h"
 #include "zRPC/resolver/resolver.h"
 
 typedef struct zRPC_scheduler {
@@ -21,7 +22,8 @@ typedef struct zRPC_scheduler {
   zRPC_cond global_cond;
   void *event_engine_context;
   const zRPC_event_engine_vtable *event_engine;
-  zRPC_timer_holder *timer_holder;
+  void *timer_engine_context;
+  const zRPC_timer_engine_vtable *timer_engine;
   int running_loop;
   zRPC_timespec ts_cache;
   zRPC_thread_id owner_thread_id;

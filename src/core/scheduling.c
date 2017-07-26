@@ -9,10 +9,15 @@
 
 extern const zRPC_event_engine_vtable poll_event_engine_vtable;
 extern const zRPC_event_engine_vtable epoll_event_engine_vtable;
+extern const zRPC_timer_engine_vtable minheap_timer_engine_vtable;
 
 static const zRPC_event_engine_vtable *g_event_engines[] = {
     &poll_event_engine_vtable,
     &epoll_event_engine_vtable
+};
+
+static const zRPC_timer_engine_vtable *g_timer_engines[] = {
+    &minheap_timer_engine_vtable,
 };
 
 static int _event_type_2_engine_event_type(int type) {
@@ -52,7 +57,8 @@ zRPC_scheduler *zRPC_scheduler_create() {
   zRPC_cond_init(&scheduler->global_cond);
   scheduler->event_engine = g_event_engines[0];
   scheduler->event_engine_context = scheduler->event_engine->initialize();
-  zRPC_timer_init(scheduler);
+  scheduler->timer_engine = g_timer_engines[0];
+  scheduler->timer_engine_context = scheduler->timer_engine->initialize();
   zRPC_queue_create(&scheduler->event_queue);
   zRPC_cond_init(&scheduler->event_queue_cond);
   zRPC_mutex_init(&scheduler->event_queue_mutex);
@@ -115,10 +121,9 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
     zRPC_event_engine_result **results;
     size_t nresults;
 
-    zRPC_timespec ts = zRPC_time_0(zRPC_TIMESPAN);
-    zRPC_timer_next_timeout(scheduler, &ts);
+    int timeout = -1;
 
-    scheduler->event_engine->dispatch(scheduler, zRPC_time_to_millis(ts), &results, &nresults);
+    scheduler->event_engine->dispatch(scheduler, timeout, &results, &nresults);
 
     // update cache time
     scheduler->ts_cache = zRPC_now(zRPC_CLOCK_MONOTONIC);

@@ -36,5 +36,6 @@ inline void zRPC_event_engine_release_result(zRPC_event_engine_result *results[]
   for (int i = 0; i < nresults; ++i) {
     free(results[i]);
   }
+  free(results);
 }
 #endif //ZRPC_EVENT_ENGINE_H

@@ -166,8 +166,7 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_sched
   zRPC_list_init(&channel->done_write);
   zRPC_ring_buf_create(&channel->buffer, 4096);
   zRPC_scheduler_register_source(scheduler, &channel->source);
-  zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
-  zRPC_source_register_listener(&channel->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _event_listener_callback);
+  zRPC_source_register_listener(&channel->source, EV_OPEN | EV_READ | EV_CLOSE | EV_ERROR, 0, _event_listener_callback);
   *out = channel;
 }
 

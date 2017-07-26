@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "zRPC/support/useful.h"
-#include "../include/timer_heap.h"
+#include "timer_heap.h"
 
 /* Adjusts a heap so as to move a hole at position i closer to the root,
    until a suitable position is found for element t. Then, copies t into that
