@@ -38,6 +38,8 @@ int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source 
 
 int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_source *source);
 
+void zRPC_schedular_outer_event(zRPC_scheduler *scheduler, zRPC_event event);
+
 void zRPC_scheduler_notify(zRPC_scheduler *scheduler);
 
 void zRPC_scheduler_destroy(zRPC_scheduler *scheduler);
