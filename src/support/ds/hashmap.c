@@ -2,7 +2,7 @@
 // Created by zhsyourai on 2/15/17.
 //
 
-#include "zRPC/ds/hashmap.h"
+#include "ds/hashmap.h"
 
 zRPC_hashmap* hashmapCreate(size_t initialCapacity,
                        int (*hash)(void* key), int (*equals)(void* keyA, void* keyB)) {

@@ -28,8 +28,6 @@ typedef struct zRPC_scheduler {
   zRPC_timespec ts_cache;
   zRPC_thread_id owner_thread_id;
   zRPC_queue *event_queue;
-  zRPC_cond event_queue_cond;
-  zRPC_mutex event_queue_mutex;
 } zRPC_scheduler;
 
 zRPC_scheduler *zRPC_scheduler_create();

@@ -4,8 +4,9 @@
 
 #include <malloc.h>
 #include <memory.h>
+#include "channel.h"
 #include "zRPC/rpc/call.h"
-#include "../include/rtti.h"
+#include "rtti.h"
 
 struct zRPC_callback_desc {
 

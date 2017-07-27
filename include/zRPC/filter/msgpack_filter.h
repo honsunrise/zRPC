@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "zRPC/channel.h"
+#include "channel.h"
 
 zRPC_filter_factory *msgpack_filter_factory();
 

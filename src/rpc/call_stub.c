@@ -7,7 +7,7 @@
 #include "zRPC/rpc/call_stub.h"
 #include "zRPC/filter/msgpack_filter.h"
 #include "zRPC/filter/litepackage_filter.h"
-#include "zRPC/ds/hashmap.h"
+#include "ds/hashmap.h"
 
 struct zRPC_call_stub {
     zRPC_filter_factory **filters;

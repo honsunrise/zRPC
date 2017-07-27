@@ -11,8 +11,8 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../../../src/include/rtti.h"
-#include "zRPC/channel.h"
+#include "rtti.h"
+#include "channel.h"
 #include "zRPC/support/lock.h"
 #include "zRPC/support/var_type.h"
 
@@ -24,7 +24,7 @@ typedef struct zRPC_call_param {
 } zRPC_call_param;
 
 typedef struct zRPC_call_result {
-    DECLARE_RTTI(zRPC_call_result);
+    DECLARE_RTTI;
     int request_id;
     unsigned int result_count;
     unsigned int result_cab;
@@ -32,7 +32,7 @@ typedef struct zRPC_call_result {
 } zRPC_call_result;
 
 typedef struct zRPC_call {
-    DECLARE_RTTI(zRPC_call);
+    DECLARE_RTTI;
     int request_id;
     const char *name;
     int flag;

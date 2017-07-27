@@ -4,8 +4,8 @@
 
 #include <malloc.h>
 #include "zRPC/rpc/call.h"
-#include "zRPC/ds/hashmap.h"
-#include "../include/rtti.h"
+#include "ds/hashmap.h"
+#include "rtti.h"
 #include "zRPC/filter.h"
 #include "zRPC/filter/rpc_filter.h"
 

@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "zRPC/channel.h"
+#include "channel.h"
 
 typedef struct zRPC_litepackage_custom zRPC_litepackage_custom;
 

@@ -3,8 +3,9 @@
 //
 
 #include <string.h>
+#include <stdlib.h>
 #include "zRPC/filter.h"
-#include "zRPC/ds/ring_buf.h"
+#include "ds/ring_buf.h"
 #include "zRPC/support/bytes_buf.h"
 #include "zRPC/filter/bytes_filter.h"
 

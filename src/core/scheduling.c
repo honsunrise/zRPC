@@ -39,19 +39,6 @@ static int _engine_event_type_2_event_type(int type) {
   return res;
 }
 
-static void _emit_event_worker(zRPC_scheduler *scheduler) {
-  zRPC_mutex_lock(&scheduler->event_queue_mutex);
-  while (zRPC_queue_is_empty(scheduler->event_queue))
-    zRPC_cond_wait(&scheduler->event_queue_cond, &scheduler->event_queue_mutex);
-  while(!zRPC_queue_is_empty(scheduler->event_queue)) {
-    zRPC_event *event;
-    zRPC_queue_dequeue(scheduler->event_queue, (void **) &event);
-    // TODO
-    free(event);
-  }
-  zRPC_mutex_unlock(&scheduler->event_queue_mutex);
-}
-
 zRPC_scheduler *zRPC_scheduler_create() {
   zRPC_scheduler *scheduler = malloc(sizeof(zRPC_scheduler));
   memset(scheduler, 0, sizeof(zRPC_scheduler));
@@ -62,8 +49,6 @@ zRPC_scheduler *zRPC_scheduler_create() {
   scheduler->timer_engine = g_timer_engines[0];
   scheduler->timer_engine_context = scheduler->timer_engine->initialize();
   zRPC_queue_create(&scheduler->event_queue);
-  zRPC_cond_init(&scheduler->event_queue_cond);
-  zRPC_mutex_init(&scheduler->event_queue_mutex);
   zRPC_resolver_init(scheduler);
   return scheduler;
 }
@@ -107,9 +92,7 @@ int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_sourc
 void zRPC_schedular_outer_event(zRPC_scheduler *scheduler, zRPC_event event) {
   zRPC_event *tmp = malloc(sizeof(zRPC_event));
   *tmp = event;
-  zRPC_mutex_lock(&scheduler->event_queue_mutex);
   zRPC_queue_enqueue(scheduler->event_queue, tmp);
-  zRPC_mutex_unlock(&scheduler->event_queue_mutex);
 }
 
 void zRPC_scheduler_destroy(zRPC_scheduler *scheduler) {
@@ -138,9 +121,7 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
       zRPC_event *tmp = malloc(sizeof(zRPC_event));
       tmp->event_type = EV_TIMER;
       tmp->event_info = timer;
-      zRPC_mutex_lock(&scheduler->event_queue_mutex);
       zRPC_queue_enqueue(scheduler->event_queue, tmp);
-      zRPC_mutex_unlock(&scheduler->event_queue_mutex);
     }
 
     zRPC_event_engine_result **results;
@@ -153,38 +134,35 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
         zRPC_event *tmp = malloc(sizeof(zRPC_event));
         tmp->event_type = EV_TIMER;
         tmp->event_info = channel;
-        zRPC_mutex_lock(&scheduler->event_queue_mutex);
         zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        zRPC_mutex_unlock(&scheduler->event_queue_mutex);
       }
 
       if(_engine_event_type_2_event_type(results[i]->event_type) & EV_WRITE) {
         zRPC_event *tmp = malloc(sizeof(zRPC_event));
         tmp->event_type = EV_TIMER;
         tmp->event_info = channel;
-        zRPC_mutex_lock(&scheduler->event_queue_mutex);
         zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        zRPC_mutex_unlock(&scheduler->event_queue_mutex);
       }
 
       if(_engine_event_type_2_event_type(results[i]->event_type) & EV_CLOSE) {
         zRPC_event *tmp = malloc(sizeof(zRPC_event));
         tmp->event_type = EV_TIMER;
         tmp->event_info = channel;
-        zRPC_mutex_lock(&scheduler->event_queue_mutex);
         zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        zRPC_mutex_unlock(&scheduler->event_queue_mutex);
       }
 
       if(_engine_event_type_2_event_type(results[i]->event_type) & EV_ERROR) {
         zRPC_event *tmp = malloc(sizeof(zRPC_event));
         tmp->event_type = EV_TIMER;
         tmp->event_info = channel;
-
-        zRPC_mutex_lock(&scheduler->event_queue_mutex);
         zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        zRPC_mutex_unlock(&scheduler->event_queue_mutex);
       }
+    }
+    while(!zRPC_queue_is_empty(scheduler->event_queue)) {
+      zRPC_event *event;
+      zRPC_queue_dequeue(scheduler->event_queue, (void **) &event);
+      // TODO
+      free(event);
     }
   }
 }

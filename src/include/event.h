@@ -44,9 +44,7 @@ typedef struct zRPC_event_listener {
 
 /* THIS function work for zRPC_event */
 
-zRPC_event *zRPC_event_create(void *target,
-                              zRPC_EVENT_TYPE event_type,
-                              zRPC_runnable *callback);
+zRPC_event *zRPC_event_create(void *event_info, zRPC_EVENT_TYPE event_type);
 
 void zRPC_event_destroy(zRPC_event *event);
 

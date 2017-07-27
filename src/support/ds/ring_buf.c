@@ -4,7 +4,7 @@
 
 #include <malloc.h>
 #include <memory.h>
-#include "zRPC/ds/ring_buf.h"
+#include "ds/ring_buf.h"
 #include "zRPC/support/useful.h"
 
 struct zRPC_ring_buffer {
