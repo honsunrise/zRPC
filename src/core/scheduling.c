@@ -161,7 +161,13 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
     while(!zRPC_queue_is_empty(scheduler->event_queue)) {
       zRPC_event *event;
       zRPC_queue_dequeue(scheduler->event_queue, (void **) &event);
-      // TODO
+      IF_TYPE_SAME(zRPC_channel, event->event_info) {
+        zRPC_channel *channel = event->event_info;
+        zRPC_source__emit_event(&channel->source, *event);
+      } ELSE_IF_TYPE_SAME(zRPC_timer, event->event_info) {
+        zRPC_timer *timer = event->event_info;
+        zRPC_source__emit_event(&timer->source, *event);
+      }
       free(event);
     }
   }

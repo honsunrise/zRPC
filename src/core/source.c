@@ -3,32 +3,8 @@
 //
 
 #include "source.h"
-static void _emit_event_callback(zRPC_event_source *source, zRPC_event event) {
-  zRPC_list_head *pos;
-  zRPC_event_listener *listener = NULL;
-  zRPC_list_for_each(pos, &source->event_listener_list) {
-    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
-    if(listener->event_type & event.event_type) {
-      listener->callback(source, event);
-      if(listener->onece)
-        zRPC_list_add_tail(&listener->remove_list_node, &source->event_listener_remove_list);
-    }
-  }
-  listener = NULL;
-  zRPC_list_for_each(pos, &source->event_listener_remove_list) {
-    if(listener) {
-      zRPC_list_del(&listener->list_node);
-    }
-    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
-  }
-  if(listener) {
-    zRPC_list_del(&listener->list_node);
-  }
-  zRPC_list_init(&source->event_listener_remove_list);
-}
 
 void zRPC_source_init(zRPC_event_source *source) {
-  source->emit = _emit_event_callback;
   source->key = (int) source;
   zRPC_list_init(&source->event_listener_list);
   zRPC_list_init(&source->event_listener_remove_list);
@@ -61,4 +37,28 @@ void zRPC_source_unregister_listener(zRPC_event_source *source,
     zRPC_list_del(&listener->list_node);
     free(listener);
   }
+}
+
+void zRPC_source__emit_event(zRPC_event_source *source, zRPC_event event) {
+  zRPC_list_head *pos;
+  zRPC_event_listener *listener = NULL;
+  zRPC_list_for_each(pos, &source->event_listener_list) {
+    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
+    if(listener->event_type & event.event_type) {
+      listener->callback(source, event);
+      if(listener->onece)
+        zRPC_list_add_tail(&listener->remove_list_node, &source->event_listener_remove_list);
+    }
+  }
+  listener = NULL;
+  zRPC_list_for_each(pos, &source->event_listener_remove_list) {
+    if(listener) {
+      zRPC_list_del(&listener->list_node);
+    }
+    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
+  }
+  if(listener) {
+    zRPC_list_del(&listener->list_node);
+  }
+  zRPC_list_init(&source->event_listener_remove_list);
 }
