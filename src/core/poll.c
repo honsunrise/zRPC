@@ -11,7 +11,7 @@ static void *initialize();
 
 static int add(void *engine_context, int fd, void *fd_info, int event_type);
 
-static int del(void *engine_context, int fd);
+static int del(void *engine_context, int fd, void **fd_info);
 
 static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
@@ -97,14 +97,16 @@ static int add(void *engine_context, int fd, void *fd_info, int event_type) {
   return 0;
 }
 
-static int del(void *engine_context, int fd) {
+static int del(void *engine_context, int fd, void **fd_info) {
   zRPC_poll_context *poll_context = engine_context;
   hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *)fd);
+  *fd_info = entry->fd_info;
   struct pollfd *move = &poll_context->fds[poll_context->nfds - 1];
   hashmap_entry *move_entry = hashmapGet(poll_context->fd_map, (void *) move->fd);
   assert(move_entry != NULL);
   move_entry->poll_fds_index = entry->poll_fds_index;
   memcpy(&poll_context->fds[entry->poll_fds_index], &poll_context->fds[--poll_context->nfds], sizeof(struct pollfd));
+  poll_context->nfds--;
   hashmapRemove(poll_context->fd_map, (void *) fd);
   free(entry);
   return 0;

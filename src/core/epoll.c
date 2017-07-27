@@ -4,7 +4,6 @@
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
-#include <unistd.h>
 #include "event_engine.h"
 #include "ds/hashmap.h"
 
@@ -12,7 +11,7 @@ static void *initialize();
 
 static int set(void *engine_context, int fd, void *fd_info, int event_type);
 
-static int del(void *engine_context, int fd);
+static int del(void *engine_context, int fd, void **fd_info);
 
 static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
@@ -89,9 +88,10 @@ static int set(void *engine_context, int fd, void *fd_info, int event_type) {
   return 0;
 }
 
-static int del(void *engine_context, int fd) {
+static int del(void *engine_context, int fd, void **fd_info) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
+  *fd_info = evs->data.ptr;
   epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_DEL, fd, NULL);
   return 0;
 }

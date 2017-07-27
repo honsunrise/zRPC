@@ -25,7 +25,7 @@ typedef struct zRPC_event_engine_vtable {
 
   int (*set)(void *engine_context, int fd, void *fd_info, int event_type);
 
-  int (*del)(void *engine_context, int fd);
+  int (*del)(void *engine_context, int fd, void **fd_info);
 
   int (*dispatch)(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
 
