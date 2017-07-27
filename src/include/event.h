@@ -32,7 +32,7 @@ typedef struct zRPC_event {
   zRPC_EVENT_TYPE event_type;
 } zRPC_event;
 
-typedef void (*zRPC_event_listener_callback)(void *source, zRPC_event event);
+typedef void (*zRPC_event_listener_callback)(void *source, zRPC_event event, void *param);
 
 typedef struct zRPC_event_listener {
   int event_type;
@@ -40,6 +40,7 @@ typedef struct zRPC_event_listener {
   zRPC_list_head list_node;
   zRPC_list_head remove_list_node;
   zRPC_event_listener_callback callback;
+  void *param;
 } zRPC_event_listener;
 
 /* THIS function work for zRPC_event */

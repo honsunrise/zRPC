@@ -22,11 +22,9 @@ typedef struct zRPC_timer {
 
 struct zRPC_scheduler;
 
-zRPC_timer *zRPC_timer_schedule(struct zRPC_scheduler *context, zRPC_timespec deadline);
+zRPC_timer *zRPC_timer_create(struct zRPC_scheduler *scheduler, zRPC_timespec deadline);
 
-zRPC_timer *zRPC_timer_schedule_now(struct zRPC_scheduler *context, zRPC_timespec deadline, zRPC_timespec now);
-
-void zRPC_timer_cancel(struct zRPC_scheduler *context, zRPC_timer *timer);
+void zRPC_timer_destroy(struct zRPC_scheduler *scheduler, zRPC_timer *timer);
 
 
 #ifdef __cplusplus

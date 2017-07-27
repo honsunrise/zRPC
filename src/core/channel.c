@@ -111,24 +111,18 @@ static void _event_on_write(zRPC_channel *channel) {
   zRPC_mutex_unlock(&channel->write_lock);
 }
 
-static void _event_listener_callback(void *source, zRPC_event event) {
+static void _event_listener_callback(void *source, zRPC_event event, void *param) {
   switch (event.event_type) {
-    case EV_WRITE:
-      _channel_on_write(source);
+    case EV_WRITE:_channel_on_write(source);
       break;
-    case EV_READ:
-      _channel_on_read(source);
+    case EV_READ:_channel_on_read(source);
       break;
-    case EV_CLOSE:
-      _channel_on_inactive(source);
+    case EV_CLOSE:_channel_on_inactive(source);
       break;
-    case EV_OPEN:
-      _channel_on_active(source);
+    case EV_OPEN:_channel_on_active(source);
       break;
-    case EV_ERROR:
-      break;
-    default:
-      assert(0);
+    case EV_ERROR:break;
+    default:assert(0);
       break;
   }
 }
@@ -166,7 +160,11 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_sched
   zRPC_list_init(&channel->done_write);
   zRPC_ring_buf_create(&channel->buffer, 4096);
   zRPC_scheduler_register_source(scheduler, &channel->source);
-  zRPC_source_register_listener(&channel->source, EV_OPEN | EV_READ | EV_CLOSE | EV_ERROR, 0, _event_listener_callback);
+  zRPC_source_register_listener(&channel->source,
+                                EV_OPEN | EV_READ | EV_CLOSE | EV_ERROR,
+                                0,
+                                _event_listener_callback,
+                                NULL);
   *out = channel;
 }
 
@@ -262,8 +260,8 @@ void *_channel_on_write(zRPC_channel *channel) {
     }
 
     ssize_t sent = zRPC_socket_write(channel->fd,
-                                 zRPC_bytes_buf_addr(write_param->outgoing_buf) + write_param->outgoing_buf_len -
-                                     write_param->write_remained, write_param->write_remained);
+                                     zRPC_bytes_buf_addr(write_param->outgoing_buf) + write_param->outgoing_buf_len -
+                                         write_param->write_remained, write_param->write_remained);
     if (sent < 0) {
       if (channel->is_active) {
         channel->is_active = 0;
@@ -307,9 +305,9 @@ static void zRPC_channel_really_write(zRPC_channel *channel, zRPC_filter_out *ou
     if (!channel->is_writing) {
       channel->is_writing = 1;
       ssize_t sent = zRPC_socket_write(channel->fd,
-                                   zRPC_bytes_buf_addr(write_param->outgoing_buf) +
-                                       write_param->outgoing_buf_len -
-                                       write_param->write_remained, write_param->write_remained);
+                                       zRPC_bytes_buf_addr(write_param->outgoing_buf) +
+                                           write_param->outgoing_buf_len -
+                                           write_param->write_remained, write_param->write_remained);
       if (sent < 0) {
         if (channel->is_active) {
           channel->is_active = 0;
@@ -322,12 +320,12 @@ static void zRPC_channel_really_write(zRPC_channel *channel, zRPC_filter_out *ou
       } else {
         write_param->write_remained -= sent;
         zRPC_list_add_tail(&write_param->list_node_pending, &channel->pending_write);
-        zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
+        zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback, NULL);
       }
       channel->is_writing = 0;
     } else {
       zRPC_list_add_tail(&write_param->list_node_pending, &channel->pending_write);
-      zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback);
+      zRPC_source_register_listener(&channel->source, EV_WRITE, 1, _event_listener_callback, NULL);
     }
   }
 }

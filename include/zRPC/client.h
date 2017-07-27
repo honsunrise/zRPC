@@ -14,16 +14,11 @@ extern "C" {
 
 typedef struct zRPC_client zRPC_client;
 
-zRPC_client *zRPC_client_create(zRPC_scheduler *context, const char *hostname, zRPC_pipe *pipe);
+zRPC_client *zRPC_client_create(zRPC_scheduler *scheduler, zRPC_pipe *pipe);
 
-zRPC_pipe *zRPC_client_get_pipe(zRPC_client *client);
-
-void zRPC_client_connect(zRPC_client *client);
+void zRPC_client_connect(zRPC_client *client, const char *hostname);
 
 zRPC_channel *zRPC_client_get_channel(zRPC_client *client);
-
-zRPC_scheduler *zRPC_client_get_context(zRPC_client *client);
-
 #ifdef __cplusplus
 }
 #endif

@@ -29,7 +29,8 @@ void zRPC_source_init(zRPC_event_source *source);
 void zRPC_source_register_listener(zRPC_event_source *source,
                                    zRPC_EVENT_TYPE event_type,
                                    int onece,
-                                   zRPC_event_listener_callback callback);
+                                   zRPC_event_listener_callback callback,
+                                   void *param);
 
 void zRPC_source_unregister_listener(zRPC_event_source *source,
                                      zRPC_EVENT_TYPE event_type,

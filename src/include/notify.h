@@ -5,7 +5,6 @@
 #ifndef ZRPC_NOTIFY_H
 #define ZRPC_NOTIFY_H
 #include "source.h"
-#include "zRPC/scheduling.h"
 
 typedef struct zRPC_notify {
   zRPC_event_source source;
@@ -13,7 +12,7 @@ typedef struct zRPC_notify {
   int notify_fd[2];
 } zRPC_notify;
 
-void zRPC_notify_create(zRPC_notify **out, zRPC_scheduler *scheduler);
+void zRPC_notify_create(zRPC_notify **out);
 
 void zRPC_notify_destroy(zRPC_notify *notify);
 
