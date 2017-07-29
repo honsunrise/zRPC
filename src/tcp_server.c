@@ -272,6 +272,7 @@ int32_t start(void *engine_context) {
     listener = listener->next;
     zRPC_scheduler_register_source(listener->server->scheduler, &listener->channel->source);
   }
+  return 0;
 }
 
 int32_t stop(void *engine_context) {
@@ -282,6 +283,7 @@ int32_t stop(void *engine_context) {
     listener = listener->next;
     zRPC_scheduler_unregister_source(listener->server->scheduler, &listener->channel->source);
   }
+  return 0;
 }
 
 void release(void *engine_context) {
