@@ -9,8 +9,8 @@
 extern "C" {
 #endif
 
-#include "zRPC/support/time.h"
-#include "zRPC/support/runnable.h"
+#include "support/time.h"
+#include "support/runnable.h"
 #include "source.h"
 
 typedef struct zRPC_timer {

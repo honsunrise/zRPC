@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <zRPC/rpc/call.h>
-#include <zRPC/support/thread.h>
+#include <support/thread.h>
 #include <zRPC/scheduling.h>
 #include <zRPC/client.h>
 #include <zRPC/rpc/call_stub.h>

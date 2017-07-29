@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #include "zRPC/timer.h"
-#include "zRPC/support/inetaddr_utils.h"
+#include "support/inetaddr_utils.h"
 
 typedef struct zRPC_resolved zRPC_resolved;
 

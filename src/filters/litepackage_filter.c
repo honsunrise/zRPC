@@ -7,7 +7,7 @@
 #include "zRPC/filter.h"
 #include "zRPC/filter/litepackage_filter.h"
 #include "ds/ring_buf.h"
-#include "zRPC/support/bytes_buf.h"
+#include "support/bytes_buf.h"
 
 typedef struct lite_package_header {
     int32_t len;

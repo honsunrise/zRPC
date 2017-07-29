@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "zRPC/support/atom.h"
+#include "support/atom.h"
 
 #define ZRPC_LFDS_FLAG_LOWERED 0
 #define ZRPC_LFDS_FLAG_RAISED 1

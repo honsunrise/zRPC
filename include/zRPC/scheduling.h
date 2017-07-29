@@ -8,10 +8,10 @@
 extern "C" {
 #endif
 
-#include "zRPC/support/thread.h"
+#include "support/thread.h"
 #include "ds/list.h"
-#include "zRPC/support/lock.h"
-#include "zRPC/support/runnable.h"
+#include "support/lock.h"
+#include "support/runnable.h"
 #include "timer.h"
 #include "event_engine.h"
 #include "timer_engine.h"

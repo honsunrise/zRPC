@@ -3,8 +3,8 @@
 //
 
 #include <malloc.h>
-#include "zRPC/support/useful.h"
-#include "zRPC/support/runnable.h"
+#include "support/useful.h"
+#include "support/runnable.h"
 
 struct zRPC_runnable {
     void *arg;

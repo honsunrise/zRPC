@@ -6,8 +6,8 @@
 #include <assert.h>
 #include "rtti.h"
 #include "channel.h"
-#include "zRPC/support/socket_utils.h"
-#include "zRPC/support/bytes_buf.h"
+#include "support/socket_utils.h"
+#include "support/bytes_buf.h"
 
 /* Call filter function */
 void zRPC_filter_call_on_active(struct zRPC_filter *filter, zRPC_channel *channel);

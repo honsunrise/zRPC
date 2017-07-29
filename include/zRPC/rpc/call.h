@@ -13,8 +13,8 @@ extern "C" {
 #include <stdint.h>
 #include "rtti.h"
 #include "channel.h"
-#include "zRPC/support/lock.h"
-#include "zRPC/support/var_type.h"
+#include "support/lock.h"
+#include "support/var_type.h"
 
 typedef struct zRPC_callback_desc zRPC_callback_desc;
 

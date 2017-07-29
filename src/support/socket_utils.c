@@ -5,8 +5,8 @@
 #include <fcntl.h>
 #include <string.h>
 #include <malloc.h>
-#include "zRPC/support/string_utils.h"
-#include "zRPC/support/socket_utils.h"
+#include "support/string_utils.h"
+#include "support/socket_utils.h"
 
 const char *zRPC_inet_ntop(int af, const void *src, char *dst, size_t size) {
   return inet_ntop(af, src, dst, (socklen_t) size);

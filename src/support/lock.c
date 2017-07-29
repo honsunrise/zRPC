@@ -2,7 +2,7 @@
 // Created by zhswo on 2016/11/22.
 //
 
-#include "zRPC/support/lock.h"
+#include "support/lock.h"
 
 int zRPC_mutex_init(zRPC_mutex *mutex) {
     return pthread_mutex_init(mutex, NULL);

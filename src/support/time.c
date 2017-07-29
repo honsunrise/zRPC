@@ -2,8 +2,8 @@
 // Created by zhsyourai on 12/26/16.
 //
 #include <stdlib.h>
-#include <time.h>
-#include <zRPC/support/time.h>
+#include "time.h"
+#include "support/time.h"
 
 static double g_time_scale;
 static uint64_t g_time_start;

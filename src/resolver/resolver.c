@@ -4,8 +4,8 @@
 
 #include <arpa/inet.h>
 #include <netdb.h>
-#include "zRPC/support/socket_utils.h"
-#include "zRPC/support/string_utils.h"
+#include "support/socket_utils.h"
+#include "support/string_utils.h"
 #include "zRPC/scheduling.h"
 
 static char *svc[][2] = {{"http", "80"},

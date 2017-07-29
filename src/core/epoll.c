@@ -4,6 +4,7 @@
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <unistd.h>
 #include "event_engine.h"
 #include "ds/hashmap.h"
 

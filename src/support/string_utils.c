@@ -6,7 +6,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdarg.h>
-#include "zRPC/support/string_utils.h"
+#include "support/string_utils.h"
 
 char *zRPC_str_dup(const char *src) {
     char *dst;

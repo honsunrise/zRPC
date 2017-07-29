@@ -3,13 +3,13 @@
 //
 
 #include <sys/socket.h>
-#include "zRPC/support/socket_utils.h"
+#include "support/socket_utils.h"
 #include "fd_notifiable.h"
 
 int zRPC_create_notifiable_fd(int fds[2]) {
     int fd[2];
-    fds[0] = NULL;
-    fds[1] = NULL;
+    fds[0] = 0;
+    fds[1] = 0;
     if (zRPC_create_socket_pair(AF_UNIX, SOCK_STREAM, 0, fd) == 0) {
         if (zRPC_set_socket_nonblocking(fd[0], 1) < 0 ||
             zRPC_set_socket_nonblocking(fd[1], 1) < 0 ||

@@ -3,9 +3,6 @@
 //
 
 #include "client_engine.h"
-#include "zRPC/support/socket_utils.h"
-#include "zRPC/support/string_utils.h"
-#include "zRPC/timer.h"
 #include "zRPC/client.h"
 
 extern const zRPC_client_engine_vtable tcp_client_engine_vtable;

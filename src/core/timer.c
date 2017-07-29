@@ -2,7 +2,7 @@
 // Created by zhsyourai on 12/27/16.
 //
 
-#include "zRPC/support/lock.h"
+#include "support/lock.h"
 #include "zRPC/timer.h"
 #include "zRPC/scheduling.h"
 

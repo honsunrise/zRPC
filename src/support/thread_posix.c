@@ -3,7 +3,7 @@
 //
 
 #include <malloc.h>
-#include "zRPC/support/thread.h"
+#include "support/thread.h"
 
 typedef struct zRPC_THREAD {
     int thread_id;

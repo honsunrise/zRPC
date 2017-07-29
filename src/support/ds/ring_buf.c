@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include "ds/ring_buf.h"
-#include "zRPC/support/useful.h"
+#include "support/useful.h"
 
 struct zRPC_ring_buffer {
     size_t front;

@@ -4,6 +4,7 @@
 
 #ifndef ZRPC_EVENT_ENGINE_H
 #define ZRPC_EVENT_ENGINE_H
+#include <stdlib.h>
 
 typedef enum EVE_EVENT_TYPE {
   EVE_READ = 0x01,

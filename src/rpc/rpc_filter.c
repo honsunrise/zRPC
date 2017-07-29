@@ -102,6 +102,6 @@ zRPC_filter_factory *rpc_filter_factory(call_function function, void *param) {
     struct rpc_filter_factory_param *factory_param = malloc(sizeof(struct rpc_filter_factory_param));
     factory_param->function = function;
     factory_param->param = param;
-    zRPC_filter_factory *rpc_filter_factory_instance = zRPC_filter_factory_create(rpc_filter_create, factory_param);
+    zRPC_filter_factory *rpc_filter_factory_instance = zRPC_filter_factory_create(accept_filter_create, factory_param);
     return rpc_filter_factory_instance;
 }
