@@ -269,8 +269,8 @@ int32_t start(void *engine_context) {
   zRPC_listener *listener;
   listener = server->listener_head;
   while (listener != NULL) {
-    listener = listener->next;
     zRPC_scheduler_register_source(listener->server->scheduler, &listener->channel->source);
+    listener = listener->next;
   }
   return 0;
 }
@@ -280,8 +280,8 @@ int32_t stop(void *engine_context) {
   zRPC_listener *listener;
   listener = server->listener_head;
   while (listener != NULL) {
-    listener = listener->next;
     zRPC_scheduler_unregister_source(listener->server->scheduler, &listener->channel->source);
+    listener = listener->next;
   }
   return 0;
 }

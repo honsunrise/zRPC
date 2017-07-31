@@ -5,15 +5,15 @@
 #include "timer_engine.h"
 #include "timer_heap.h"
 
-void *initialize();
+static void *initialize();
 
-int add(void *engine_context, zRPC_timer *timer);
+static int add(void *engine_context, zRPC_timer *timer);
 
-int del(void *engine_context, zRPC_timer *timer);
+static int del(void *engine_context, zRPC_timer *timer);
 
-int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults);
+static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults);
 
-void release(void *engine_context);
+static void release(void *engine_context);
 
 typedef struct zRPC_minheap_timer_context {
     zRPC_mutex mutex;
@@ -31,7 +31,7 @@ const zRPC_timer_engine_vtable minheap_timer_engine_vtable = {
     release
 };
 
-void *initialize() {
+static void *initialize() {
   zRPC_minheap_timer_context *context = malloc(sizeof(zRPC_minheap_timer_context));
   zRPC_timer_heap_init(&context->heap);
   zRPC_mutex_init(&context->mutex);
@@ -40,7 +40,7 @@ void *initialize() {
   return context;
 }
 
-int add(void *engine_context, zRPC_timer *timer) {
+static int add(void *engine_context, zRPC_timer *timer) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_mutex_lock(&context->mutex);
   int is_first_timer = zRPC_timer_heap_add(&context->heap, timer);
@@ -53,7 +53,7 @@ int add(void *engine_context, zRPC_timer *timer) {
   return 0;
 }
 
-int del(void *engine_context, zRPC_timer *timer) {
+static int del(void *engine_context, zRPC_timer *timer) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_mutex_lock(&context->mutex);
   zRPC_timer_heap_remove(&context->heap, timer);
@@ -63,7 +63,7 @@ int del(void *engine_context, zRPC_timer *timer) {
 
 #define TIMER_BASE_TMP_NUM 512
 
-int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults) {
+static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_timespec now = zRPC_now(zRPC_CLOCK_MONOTONIC);
   zRPC_timespec ts;
@@ -109,7 +109,7 @@ int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults)
 }
 
 
-void release(void *engine_context) {
+static void release(void *engine_context) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_timer_heap_destroy(&context->heap);
   zRPC_mutex_destroy(&context->mutex);

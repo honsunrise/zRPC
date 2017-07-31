@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include "lf_queue.h"
 
-void zRPC_queue_init(struct zRPC_queue_state *q) {
+void zRPC_lf_queue_init(struct zRPC_queue_state *q) {
     assert(q != NULL);
     assert((uintptr_t) &q->enqueue % ZRPC_ATOM_ARCH_CACHELINE_IN_BYTES == 0);
     assert((uintptr_t) &q->dequeue % ZRPC_ATOM_ARCH_CACHELINE_IN_BYTES == 0);
@@ -27,8 +27,8 @@ void zRPC_queue_init(struct zRPC_queue_state *q) {
     return;
 }
 
-void zRPC_queue_enqueue(struct zRPC_queue_state *q,
-                        struct zRPC_queue_element *e) {
+void zRPC_lf_queue_enqueue(struct zRPC_queue_state *q,
+                           struct zRPC_queue_element *e) {
     assert(q != NULL);
     assert(e != NULL);
 
@@ -89,8 +89,8 @@ void zRPC_queue_enqueue(struct zRPC_queue_state *q,
 }
 
 
-int zRPC_queue_dequeue(struct zRPC_queue_state *q,
-                       struct zRPC_queue_element **e) {
+int zRPC_lf_queue_dequeue(struct zRPC_queue_state *q,
+                          struct zRPC_queue_element **e) {
     assert(q != NULL);
     assert(e != NULL);
 

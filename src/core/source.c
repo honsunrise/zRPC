@@ -21,7 +21,8 @@ void zRPC_source_register_listener(zRPC_event_source *source,
   listener->param = param;
   listener->onece = onece;
   zRPC_list_add_tail(&listener->list_node, &source->event_listener_list);
-  source->notify(source->notify_param, source, &source->event_listener_list);
+  if(source->notify)
+    source->notify(source->notify_param, source, &source->event_listener_list);
 }
 
 void zRPC_source_unregister_listener(zRPC_event_source *source,

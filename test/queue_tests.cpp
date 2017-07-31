@@ -10,13 +10,13 @@ struct zRPC_queue_state queue;
 int long run_insert_test() {
     struct zRPC_queue_element *e_p = (zRPC_queue_element *) malloc(sizeof(struct zRPC_queue_element));
     e_p->value = (void *) (random() + 1);
-    zRPC_queue_enqueue(&queue, e_p);
+    zRPC_lf_queue_enqueue(&queue, e_p);
     return (int long)e_p->value;
 }
 
 int long run_get_test() {
     struct zRPC_queue_element *e;
-    if(zRPC_queue_dequeue(&queue, &e)) {
+    if(zRPC_lf_queue_dequeue(&queue, &e)) {
         int long value = (int long)e->value;
         free(e);
         return value;
@@ -63,7 +63,7 @@ TEST (QueueTests, MultiThreadTests) {
 
 int main(int argc, char **argv) {
     srand(time(NULL));
-    zRPC_queue_init(&queue);
+  zRPC_lf_queue_init(&queue);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -37,7 +37,7 @@ test_node *getNode(int a) {
 
 int main(int argc, char **argv) {
     /*Init scheduler*/
-    zRPC_scheduler *context = zRPC_context_create();
+    zRPC_scheduler *scheduler = zRPC_scheduler_create();
 
     zRPC_function_table_item function_table_callee[] = {
             {"add", NULL, warp_callee_add}
@@ -59,9 +59,9 @@ int main(int argc, char **argv) {
     }
 
     /* Server start */
-    zRPC_server *server = zRPC_server_create(context, "0.0.0.0:50000", server_pipe);
+    zRPC_server *server = zRPC_server_create(scheduler, "0.0.0.0:50000", server_pipe);
     zRPC_server_start(server);
 
     /*Dispatch scheduler*/
-    zRPC_context_dispatch(context);
+    zRPC_scheduler_run(scheduler);
 }

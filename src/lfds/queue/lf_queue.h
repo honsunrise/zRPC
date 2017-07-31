@@ -28,13 +28,13 @@ enum zRPC_queue_queue_state {
     ZRPC_QUEUE_QUEUE_STATE_ATTEMPT_DEQUEUE
 };
 
-void zRPC_queue_init(struct zRPC_queue_state *q);
+void zRPC_lf_queue_init(struct zRPC_queue_state *q);
 
-void zRPC_queue_enqueue(struct zRPC_queue_state *q,
-                        struct zRPC_queue_element *e);
+void zRPC_lf_queue_enqueue(struct zRPC_queue_state *q,
+                           struct zRPC_queue_element *e);
 
-int zRPC_queue_dequeue(struct zRPC_queue_state *q,
-                       struct zRPC_queue_element **e);
+int zRPC_lf_queue_dequeue(struct zRPC_queue_state *q,
+                          struct zRPC_queue_element **e);
 
 #ifdef __cplusplus
 }
