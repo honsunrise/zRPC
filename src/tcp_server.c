@@ -35,6 +35,12 @@ static int check_socket(void) {
   return has_so_reuse_port;
 }
 
+typedef struct zRPC_accepter {
+  zRPC_event_source source;
+  int fd;
+  zRPC_pipe *pipe;
+} zRPC_accepter;
+
 typedef struct zRPC_listener {
   struct zRPC_tcp_server *server;
   zRPC_channel *channel;
@@ -48,7 +54,9 @@ typedef struct zRPC_listener {
   void *accept_cb_arg;
 
   void *(*accept_cb)(void *);
+  zRPC_accepter *accepter;
 } zRPC_listener;
+
 
 typedef struct zRPC_tcp_server {
   zRPC_scheduler *scheduler;
@@ -136,12 +144,6 @@ static int child_io_thread(void *arg) {
   return 0;
 }
 
-typedef struct zRPC_accepter {
-  zRPC_event_source source;
-  int fd;
-  zRPC_pipe *pipe;
-} zRPC_accepter;
-
 static void _accepter_listener_callback(void *source, zRPC_event event, void *param) {
   zRPC_accepter *accepter = source;
   for (;;) {
@@ -173,8 +175,8 @@ zRPC_accepter *zRPC_accepter_create(zRPC_listener *listener, zRPC_scheduler *sch
   RTTI_INIT_PTR(zRPC_channel, &accepter->source);
   zRPC_source_init(&accepter->source);
   accepter->fd = listener->fd;
-  zRPC_scheduler_register_source(scheduler, &accepter->source);
   zRPC_source_register_listener(&accepter->source, EV_READ, 0, _accepter_listener_callback, listener);
+  zRPC_scheduler_register_source(scheduler, &accepter->source);
 }
 
 static int add_listener_to_server(zRPC_tcp_server *server,
@@ -188,6 +190,7 @@ static int add_listener_to_server(zRPC_tcp_server *server,
   listener->next = NULL;
   listener->pipe = pipe;
   listener->fd = fd;
+  listener->accepter = zRPC_accepter_create(listener, server->scheduler);
 
   if (server->listener_head == NULL) {
     server->listener_head = listener;
