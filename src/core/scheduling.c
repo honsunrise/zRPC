@@ -30,15 +30,6 @@ static int _event_type_2_engine_event_type(int type) {
   return res;
 }
 
-static int _engine_event_type_2_event_type(int type) {
-  int res = 0;
-  res |= type & EVE_CLOSE ? EV_CLOSE : 0;
-  res |= type & EVE_READ ? EV_READ : 0;
-  res |= type & EVE_WRITE ? EV_WRITE : 0;
-  res |= type & EVE_ERROR ? EVE_ERROR : 0;
-  return res;
-}
-
 typedef struct _channel_status {
   zRPC_channel *channel;
   int is_active;
@@ -55,12 +46,15 @@ zRPC_scheduler *zRPC_scheduler_create() {
   scheduler->timer_engine_context = scheduler->timer_engine->initialize();
   zRPC_queue_create(&scheduler->event_queue);
   zRPC_notify_create(&scheduler->notify);
-  zRPC_scheduler_register_source(scheduler, &scheduler->notify->source);
+  scheduler->event_engine->set(scheduler->event_engine_context,
+                               scheduler->notify->notify_fd[0],
+                               scheduler->notify,
+                               EVE_READ);
   return scheduler;
 }
 
 void zRPC_scheduler_notify(zRPC_scheduler *scheduler) {
-  if (scheduler->owner_thread_id == zRPC_thread_current_id() && scheduler->running_loop) {
+  if (scheduler->owner_thread_id != zRPC_thread_current_id() && scheduler->running_loop) {
     zRPC_notify_write(scheduler->notify);
   }
 }
@@ -79,15 +73,19 @@ static void _notify_listener_change(void *notify_param,
                                  channel->fd,
                                  channel_status,
                                  _event_type_2_engine_event_type(source->attention_event));
-  } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
-
   }
   zRPC_scheduler_notify(scheduler);
 }
 
 int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source *source) {
-  source->notify = _notify_listener_change;
-  source->notify_param = scheduler;
+  IF_TYPE_SAME(zRPC_channel, source) {
+    source->notify = _notify_listener_change;
+    source->notify_param = scheduler;
+  } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
+    zRPC_timer *timer = (zRPC_timer *) source;
+    scheduler->timer_engine->add(scheduler->timer_engine_context, timer);
+    zRPC_scheduler_notify(scheduler);
+  }
   return 0;
 }
 
@@ -98,9 +96,13 @@ int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_sourc
     zRPC_channel *channel = (zRPC_channel *) source;
     _channel_status *channel_status;
     scheduler->event_engine->del(scheduler->event_engine_context, channel->fd, (void **) &channel_status);
+    free(channel_status);
     zRPC_channel_destroy(channel);
+    zRPC_scheduler_notify(scheduler);
   } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
-
+    zRPC_timer *timer = (zRPC_timer *) source;
+    scheduler->timer_engine->del(scheduler->timer_engine_context, timer);
+    zRPC_scheduler_notify(scheduler);
   }
   return 0;
 }
@@ -123,10 +125,7 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
     scheduler->running_loop = 1;
     zRPC_mutex_unlock(&scheduler->global_mutex);
 
-
     scheduler->owner_thread_id = zRPC_thread_current_id();
-    // clear time cache
-    scheduler->ts_cache.tv_sec = scheduler->ts_cache.tv_nsec = 0;
 
     while (scheduler->running_loop) {
       zRPC_timer **timers;
@@ -147,33 +146,50 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
       scheduler->event_engine->dispatch(scheduler->event_engine_context, timeout, &results, &nresults);
 
       for (int i = 0; i < nresults; ++i) {
-        _channel_status *channel_status = results[i]->fd_info;
-        if (_engine_event_type_2_event_type(results[i]->event_type) & EV_READ) {
-          zRPC_event *tmp = malloc(sizeof(zRPC_event));
-          tmp->event_type = EV_READ;
-          tmp->event_info = channel_status->channel;
-          zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        }
+        if(results[i]->fd_info == scheduler->notify) {
+          if (results[i]->event_type & EVE_READ) {
+            zRPC_event *tmp = malloc(sizeof(zRPC_event));
+            tmp->event_type = EV_READ;
+            tmp->event_info = results[i]->fd_info;
+            zRPC_queue_enqueue(scheduler->event_queue, tmp);
+          }
+        } else {
+          _channel_status *channel_status = results[i]->fd_info;
+          if (results[i]->event_type & EVE_READ) {
+              zRPC_event *tmp = malloc(sizeof(zRPC_event));
+              tmp->event_type = EV_READ;
+              tmp->event_info = channel_status->channel;
+              zRPC_queue_enqueue(scheduler->event_queue, tmp);
+          }
 
-        if (_engine_event_type_2_event_type(results[i]->event_type) & EV_WRITE) {
-          zRPC_event *tmp = malloc(sizeof(zRPC_event));
-          tmp->event_type = EV_WRITE;
-          tmp->event_info = channel_status->channel;
-          zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        }
+          if (results[i]->event_type & EVE_WRITE) {
+            if(channel_status->is_active) {
+              zRPC_event *tmp = malloc(sizeof(zRPC_event));
+              tmp->event_type = EV_WRITE;
+              tmp->event_info = channel_status->channel;
+              zRPC_queue_enqueue(scheduler->event_queue, tmp);
+            } else {
+              channel_status->is_active = 1;
+              zRPC_event *tmp = malloc(sizeof(zRPC_event));
+              tmp->event_type = EV_OPEN;
+              tmp->event_info = channel_status->channel;
+              zRPC_queue_enqueue(scheduler->event_queue, tmp);
+            }
+          }
 
-        if (_engine_event_type_2_event_type(results[i]->event_type) & EV_CLOSE) {
-          zRPC_event *tmp = malloc(sizeof(zRPC_event));
-          tmp->event_type = EV_CLOSE;
-          tmp->event_info = channel_status->channel;
-          zRPC_queue_enqueue(scheduler->event_queue, tmp);
-        }
+          if (results[i]->event_type & EVE_CLOSE) {
+            zRPC_event *tmp = malloc(sizeof(zRPC_event));
+            tmp->event_type = EV_CLOSE;
+            tmp->event_info = channel_status->channel;
+            zRPC_queue_enqueue(scheduler->event_queue, tmp);
+          }
 
-        if (_engine_event_type_2_event_type(results[i]->event_type) & EV_ERROR) {
-          zRPC_event *tmp = malloc(sizeof(zRPC_event));
-          tmp->event_type = EV_ERROR;
-          tmp->event_info = channel_status->channel;
-          zRPC_queue_enqueue(scheduler->event_queue, tmp);
+          if (results[i]->event_type & EVE_ERROR) {
+            zRPC_event *tmp = malloc(sizeof(zRPC_event));
+            tmp->event_type = EV_ERROR;
+            tmp->event_info = channel_status->channel;
+            zRPC_queue_enqueue(scheduler->event_queue, tmp);
+          }
         }
       }
       while (!zRPC_queue_is_empty(scheduler->event_queue)) {
@@ -186,8 +202,8 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
           zRPC_timer *timer = event->event_info;
           zRPC_source__emit_event(&timer->source, *event);
         } ELSE_IF_TYPE_SAME(zRPC_notify, event->event_info) {
-          zRPC_timer *timer = event->event_info;
-          zRPC_source__emit_event(&timer->source, *event);
+          zRPC_notify *notify = event->event_info;
+          zRPC_source__emit_event(&notify->source, *event);
         }
         free(event);
       }

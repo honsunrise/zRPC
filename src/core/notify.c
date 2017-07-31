@@ -20,7 +20,7 @@ void zRPC_notify_create(zRPC_notify **out) {
   RTTI_INIT_PTR(zRPC_notify, &notify->source);
   zRPC_create_notifiable_fd(notify->notify_fd);
   zRPC_source_init(&notify->source);
-  zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, NULL);
+  zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, 0xaaaaa);
   *out = notify;
 }
 

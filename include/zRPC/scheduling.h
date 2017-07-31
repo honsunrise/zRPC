@@ -25,7 +25,6 @@ typedef struct zRPC_scheduler {
   void *timer_engine_context;
   const zRPC_timer_engine_vtable *timer_engine;
   int running_loop;
-  zRPC_timespec ts_cache;
   zRPC_thread_id owner_thread_id;
   zRPC_queue *event_queue;
   zRPC_notify *notify;

@@ -63,6 +63,6 @@ static inline void zRPC_list_move_tail(struct zRPC_list_head *list,
     zRPC_list_entry((head)->next, type, member)
 
 #define zRPC_list_for_each(pos, head) \
-    for (pos = (head)->next; pos != (head); pos = pos->next)
+    for ((pos) = (head)->next; (pos) != (head); (pos) = (pos)->next)
 
 #endif //ZRPC_LIST_H

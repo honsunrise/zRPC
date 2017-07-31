@@ -232,7 +232,10 @@ void *_channel_on_read(zRPC_channel *channel) {
     if (read <= 0) {
       if (channel->is_active) {
         channel->is_active = 0;
-        _channel_on_inactive(channel);
+        zRPC_event event;
+        event.event_type = EV_CLOSE;
+        event.event_info = channel;
+        zRPC_schedular_outer_event(channel->scheduler, event);
       }
       return NULL;
     }
@@ -265,7 +268,10 @@ void *_channel_on_write(zRPC_channel *channel) {
     if (sent < 0) {
       if (channel->is_active) {
         channel->is_active = 0;
-        _channel_on_inactive(channel);
+        zRPC_event event;
+        event.event_type = EV_CLOSE;
+        event.event_info = channel;
+        zRPC_schedular_outer_event(channel->scheduler, event);
       }
       goto gone;
     }

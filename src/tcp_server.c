@@ -17,12 +17,12 @@ int32_t stop(void *engine_context);
 void release(void *engine_context);
 
 const zRPC_server_engine_vtable tcp_server_engine_vtable = {
-  "tcp_server",
-  initialize,
-  setup,
-  start,
-  stop,
-  release
+    "tcp_server",
+    initialize,
+    setup,
+    start,
+    stop,
+    release
 };
 
 static int check_socket(void) {
@@ -55,7 +55,7 @@ typedef struct zRPC_tcp_server {
   zRPC_listener *listener_head;
   zRPC_listener *listener_tail;
   unsigned int listeners;
-}zRPC_tcp_server;
+} zRPC_tcp_server;
 
 void *initialize(zRPC_scheduler *scheduler) {
   zRPC_tcp_server *tcp_server = (zRPC_tcp_server *) malloc(sizeof(zRPC_tcp_server));
@@ -136,81 +136,59 @@ static int child_io_thread(void *arg) {
   return 0;
 }
 
-static void _accept_filter_on_read(zRPC_filter *filter, struct zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
-  zRPC_listener *listener = zRPC_filter_get_custom_data(filter);
-  zRPC_tcp_server *tcp_server = listener->server;
-  int err;
+typedef struct zRPC_accepter {
+  zRPC_event_source source;
+  int fd;
+  zRPC_pipe *pipe;
+} zRPC_accepter;
 
-  /* loop until accept4 returns EAGAIN, and then re-arm notification */
+static void _accepter_listener_callback(void *source, zRPC_event event, void *param) {
+  zRPC_accepter *accepter = source;
   for (;;) {
     zRPC_inetaddr address;
     char *addr_str;
     address.len = sizeof(struct sockaddr_storage);
-    int new_fd = zRPC_accept4(listener->fd, &address, 1, 1);
+    int new_fd = zRPC_accept4(accepter->fd, &address, 1, 1);
     if (new_fd < 0) {
       switch (errno) {
-        case EINTR:
-          continue;
-        case EAGAIN:
-          return;
-        default:
-          return;
+        case EINTR:continue;
+        case EAGAIN:return;
+        default:return;
       }
     }
-
     zRPC_set_socket_no_sigpipe_if(new_fd);
     addr_str = zRPC_inetaddr_to_uri(&address);
     free(addr_str);
 
     struct child_thread_param *param = malloc(sizeof(struct child_thread_param));
     param->new_fd = new_fd;
-    param->pipe = listener->pipe;
+    param->pipe = accepter->pipe;
     zRPC_thread_id thread_id;
     zRPC_thread_create(&thread_id, child_io_thread, param, ZRPC_THREAD_FLAG_JOINABLE);
   }
 }
 
-static void _accept_filter_on_write(zRPC_filter *filter, struct zRPC_channel *channel, void *msg, zRPC_filter_out *out) {
-  zRPC_listener *listener = zRPC_filter_get_custom_data(filter);
-
+zRPC_accepter *zRPC_accepter_create(zRPC_listener *listener, zRPC_scheduler *scheduler) {
+  zRPC_accepter *accepter = (zRPC_accepter *) malloc(sizeof(zRPC_accepter));
+  RTTI_INIT_PTR(zRPC_channel, &accepter->source);
+  zRPC_source_init(&accepter->source);
+  accepter->fd = listener->fd;
+  zRPC_scheduler_register_source(scheduler, &accepter->source);
+  zRPC_source_register_listener(&accepter->source, EV_READ, 0, _accepter_listener_callback, listener);
 }
 
-static void _accept_filter_on_active(zRPC_filter *filter, zRPC_channel *channel) {
-  zRPC_listener *listener = zRPC_filter_get_custom_data(filter);
-}
-
-static void _accept_filter_on_inactive(zRPC_filter *filter, zRPC_channel *channel) {
-  zRPC_listener *listener = zRPC_filter_get_custom_data(filter);
-}
-
-static zRPC_filter *accept_filter_create(void *factory_custom) {
-  zRPC_filter *filter;
-  struct zRPC_listener *param = factory_custom;
-  zRPC_filter_create(&filter, param);
-
-  zRPC_filter_set_on_active_callback(filter, _accept_filter_on_active);
-  zRPC_filter_set_on_read_callback(filter, _accept_filter_on_read);
-  zRPC_filter_set_on_write_callback(filter, _accept_filter_on_write);
-  zRPC_filter_set_on_inactive_callback(filter, _accept_filter_on_inactive);
-  return filter;
-}
-
-zRPC_filter_factory *accept_filter_factory(zRPC_listener *listener) {
-  return zRPC_filter_factory_create(accept_filter_create, listener);
-}
-
-static int add_listener_to_server(zRPC_tcp_server *server, int fd, zRPC_pipe *pipe, const zRPC_inetaddr *address, zRPC_listener **out) {
+static int add_listener_to_server(zRPC_tcp_server *server,
+                                  int fd,
+                                  zRPC_pipe *pipe,
+                                  const zRPC_inetaddr *address,
+                                  zRPC_listener **out) {
   zRPC_listener *listener = (zRPC_listener *) malloc(sizeof(zRPC_listener));
   listener->server = server;
   listener->address = *address;
   listener->next = NULL;
   listener->pipe = pipe;
   listener->fd = fd;
-  prepare_listen_socket(fd, &listener->address);
-  zRPC_pipe *accept_pipe;
-  zRPC_pipe_create(&accept_pipe);
-  zRPC_pipe_add_filter(accept_pipe, accept_filter_factory(listener));
-  zRPC_channel_create(&listener->channel, accept_pipe, listener->fd, server->scheduler);
+
   if (server->listener_head == NULL) {
     server->listener_head = listener;
   } else {
@@ -240,6 +218,7 @@ void setup(void *engine_context, zRPC_pipe *pipe, const zRPC_inetaddr *addr) {
     addr = &wild_addr_v6;
     errs[0] = zRPC_create_socket(addr, SOCK_STREAM, 0, &smode, &fd);
     if (errs[0] == 0) {
+      prepare_listen_socket(fd, addr);
       errs[0] = add_listener_to_server(server, fd, pipe, addr, &listener);
       if (fd >= 0 && smode == ZRPC_SOCKET_IPV4_V6) {
         return;
@@ -251,6 +230,7 @@ void setup(void *engine_context, zRPC_pipe *pipe, const zRPC_inetaddr *addr) {
   zRPC_inetaddr address_v4;
   errs[1] = zRPC_create_socket(addr, SOCK_STREAM, 0, &smode, &fd);
   if (errs[1] == 0) {
+    prepare_listen_socket(fd, addr);
     if (smode == ZRPC_SOCKET_IPV4 && zRPC_inetaddr_is_v4_mapped(addr)) {
       zRPC_inetaddr_to_v4_mapped(addr, &address_v4);
       addr = &address_v4;

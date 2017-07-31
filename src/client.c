@@ -17,14 +17,12 @@ struct zRPC_client {
   void *client_engine_context;
   zRPC_pipe *pipe;
   zRPC_channel *channel;
-  char *hostname;
 };
 
 zRPC_client *zRPC_client_create(zRPC_scheduler *scheduler, zRPC_pipe *pipe) {
   zRPC_client *client = (zRPC_client *) malloc(sizeof(zRPC_client));
   client->scheduler = scheduler;
   client->pipe = pipe;
-  client->hostname = NULL;
   client->client_engine = g_client_engines[0];
   return client;
 }
@@ -39,7 +37,7 @@ static void resolver_complete_callback(void *custom_arg, zRPC_resolved *resolved
 }
 
 void zRPC_client_connect(zRPC_client *client, const char *hostname) {
-  zRPC_resolver_address(client->scheduler, client->hostname, resolver_complete_callback, client);
+  zRPC_resolver_address(client->scheduler, hostname, resolver_complete_callback, client);
 }
 
 zRPC_channel *zRPC_client_get_channel(zRPC_client *client) {

@@ -8,9 +8,9 @@
 
 typedef enum EVE_EVENT_TYPE {
   EVE_READ = 0x01,
-  EVE_WRITE,
-  EVE_CLOSE,
-  EVE_ERROR,
+  EVE_WRITE = 0x02,
+  EVE_CLOSE = 0x04,
+  EVE_ERROR = 0x08,
 } zRPC_EVE_EVENT_TYPE;
 
 typedef struct zRPC_event_engine_result {

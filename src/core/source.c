@@ -5,28 +5,31 @@
 #include "source.h"
 
 void zRPC_source_init(zRPC_event_source *source) {
-  source->key = (int) source;
+  source->key = (intptr_t) source;
+  source->notify = NULL;
+  source->notify_param = NULL;
   zRPC_list_init(&source->event_listener_list);
   zRPC_list_init(&source->event_listener_remove_list);
 }
 
 void zRPC_source_register_listener(zRPC_event_source *source,
-                                   zRPC_EVENT_TYPE event_type,
+                                   int event_type,
                                    int onece,
                                    zRPC_event_listener_callback callback,
                                    void *param) {
-  zRPC_event_listener *listener = malloc(sizeof(listener));
+  zRPC_event_listener *listener = malloc(sizeof(zRPC_event_listener));
   listener->callback = callback;
   listener->event_type = event_type;
   listener->param = param;
   listener->onece = onece;
   zRPC_list_add_tail(&listener->list_node, &source->event_listener_list);
+  source->attention_event |= event_type;
   if(source->notify)
     source->notify(source->notify_param, source, &source->event_listener_list);
 }
 
 void zRPC_source_unregister_listener(zRPC_event_source *source,
-                                     zRPC_EVENT_TYPE event_type,
+                                     int event_type,
                                      zRPC_event_listener_callback callback) {
   zRPC_list_head *pos;
   zRPC_event_listener *listener = NULL;
