@@ -22,10 +22,6 @@ typedef struct zRPC_timer_engine_vtable {
   void (*release)(void *engine_context);
 } zRPC_timer_engine_vtable;
 
-inline void zRPC_timer_engine_release_result(zRPC_timer **results, size_t nresults) {
-  for (int i = 0; i < nresults; ++i) {
-    free(results[i]);
-  }
-  free(results);
-}
+void zRPC_timer_engine_release_result(zRPC_timer **results, size_t nresults);
+
 #endif //ZRPC_TIMER_ENGINE_H

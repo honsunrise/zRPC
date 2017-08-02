@@ -59,8 +59,8 @@ int main(int argc, char **argv) {
     }
 
     /* Server start */
-    zRPC_server *server = zRPC_server_create(scheduler, "0.0.0.0:50000", server_pipe);
-    zRPC_server_start(server);
+    zRPC_server *server = zRPC_server_create(scheduler, server_pipe);
+    zRPC_server_start(server, "0.0.0.0:50000");
 
     /*Dispatch scheduler*/
     zRPC_scheduler_run(scheduler);

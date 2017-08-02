@@ -31,7 +31,7 @@ static void resolver_complete_callback(void *custom_arg, zRPC_resolved *resolved
   zRPC_client *client = custom_arg;
   for (int i = 0; i < resolved->inetaddres.naddrs;) {
     client->client_engine_context = client->client_engine->initialize(client->scheduler, client->pipe, &resolved->inetaddres.addrs[i]);
-    client->client_engine->start(client->client_engine_context);
+    client->channel = client->client_engine->start(client->client_engine_context);
     return;
   }
 }

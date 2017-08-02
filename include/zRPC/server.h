@@ -14,9 +14,9 @@ extern "C" {
 
 typedef struct zRPC_server zRPC_server;
 
-zRPC_server *zRPC_server_create(struct zRPC_scheduler *context, const char *addr, zRPC_pipe *pipe);
+zRPC_server *zRPC_server_create(struct zRPC_scheduler *context, zRPC_pipe *pipe);
 
-void zRPC_server_start(zRPC_server *server);
+void zRPC_server_start(zRPC_server *server, const char *addr);
 
 void zRPC_server_stop(zRPC_server *server);
 

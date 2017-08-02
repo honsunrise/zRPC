@@ -11,9 +11,7 @@ typedef struct zRPC_server_engine_vtable {
 
   void *(*initialize)(zRPC_scheduler *scheduler);
 
-  void (*setup)(void *engine_context, zRPC_pipe *pipe, const zRPC_inetaddr *addr);
-
-  int32_t (*start)(void *engine_context);
+  void (*start)(void *engine_context, zRPC_pipe *pipe, const zRPC_inetaddr *addr);
 
   int32_t (*stop)(void *engine_context);
 

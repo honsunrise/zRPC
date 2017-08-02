@@ -10,7 +10,9 @@
 
 static void *initialize();
 
-static int set(void *engine_context, int fd, void *fd_info, int event_type);
+static int add(void *engine_context, int fd, void *fd_info, int event_type);
+
+static int modify(void *engine_context, int fd, int event_type);
 
 static int del(void *engine_context, int fd, void **fd_info);
 
@@ -34,7 +36,8 @@ typedef struct zRPC_epoll_context {
 const zRPC_event_engine_vtable epoll_event_engine_vtable = {
     "epoll",
     initialize,
-    set,
+    add,
+    modify,
     del,
     dispatch,
     release
@@ -55,7 +58,7 @@ static void release(void *engine_context) {
   }
 }
 
-static int set(void *engine_context, int fd, void *fd_info, int event_type) {
+static int add(void *engine_context, int fd, void *fd_info, int event_type) {
   zRPC_epoll_context *epoll_context = engine_context;
   struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
   if (evs == NULL) {
@@ -74,6 +77,15 @@ static int set(void *engine_context, int fd, void *fd_info, int event_type) {
     hashmapPut(epoll_context->ep_evs, (void *)fd, evs);
     epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_ADD, fd, evs);
   } else {
+    assert(0);
+  }
+  return 0;
+}
+
+static int modify(void *engine_context, int fd, int event_type) {
+  zRPC_epoll_context *epoll_context = engine_context;
+  struct epoll_event *evs = hashmapGet(epoll_context->ep_evs, (void *) fd);
+  if (evs != NULL) {
     evs->events = EPOLLET | EPOLLERR;
     if (event_type & EVE_WRITE) {
       evs->events |= EPOLLOUT;
@@ -85,8 +97,9 @@ static int set(void *engine_context, int fd, void *fd_info, int event_type) {
       evs->events |= EPOLLRDHUP;
     }
     epoll_ctl(epoll_context->ep_fd, EPOLL_CTL_MOD, fd, evs);
+  } else {
+    assert(0);
   }
-  return 0;
 }
 
 static int del(void *engine_context, int fd, void **fd_info) {

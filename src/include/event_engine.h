@@ -24,7 +24,9 @@ typedef struct zRPC_event_engine_vtable {
 
   void *(*initialize)();
 
-  int (*set)(void *engine_context, int fd, void *fd_info, int event_type);
+  int (*add)(void *engine_context, int fd, void *fd_info, int event_type);
+
+  int (*modify)(void *engine_context, int fd, int event_type);
 
   int (*del)(void *engine_context, int fd, void **fd_info);
 
@@ -33,10 +35,6 @@ typedef struct zRPC_event_engine_vtable {
   void (*release)(void *engine_context);
 } zRPC_event_engine_vtable;
 
-inline void zRPC_event_engine_release_result(zRPC_event_engine_result *results[], size_t nresults) {
-  for (int i = 0; i < nresults; ++i) {
-    free(results[i]);
-  }
-  free(results);
-}
+void zRPC_event_engine_release_result(zRPC_event_engine_result *results[], size_t nresults);
+
 #endif //ZRPC_EVENT_ENGINE_H

@@ -40,7 +40,10 @@ void zRPC_source_unregister_listener(zRPC_event_source *source,
     }
   }
   if(listener != NULL) {
+    source->attention_event &= ~event_type;
     zRPC_list_del(&listener->list_node);
+    if(source->notify)
+      source->notify(source->notify_param, source, &source->event_listener_list);
     free(listener);
   }
 }
@@ -58,13 +61,19 @@ void zRPC_source__emit_event(zRPC_event_source *source, zRPC_event event) {
   }
   listener = NULL;
   zRPC_list_for_each(pos, &source->event_listener_remove_list) {
-    if(listener) {
+    if(listener != NULL) {
+      source->attention_event &= ~listener->event_type;
       zRPC_list_del(&listener->list_node);
+      free(listener);
     }
-    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
+    listener = zRPC_list_entry(pos, zRPC_event_listener, remove_list_node);
   }
-  if(listener) {
+  if(listener != NULL) {
+    source->attention_event &= ~listener->event_type;
     zRPC_list_del(&listener->list_node);
+    if(source->notify)
+      source->notify(source->notify_param, source, &source->event_listener_list);
+    free(listener);
   }
   zRPC_list_init(&source->event_listener_remove_list);
 }

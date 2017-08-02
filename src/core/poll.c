@@ -11,6 +11,8 @@ static void *initialize();
 
 static int add(void *engine_context, int fd, void *fd_info, int event_type);
 
+static int modify(void *engine_context, int fd, int event_type);
+
 static int del(void *engine_context, int fd, void **fd_info);
 
 static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_result **results[], size_t *nresults);
@@ -42,6 +44,7 @@ const zRPC_event_engine_vtable poll_event_engine_vtable = {
     "poll",
     initialize,
     add,
+    modify,
     del,
     dispatch,
     release
@@ -92,9 +95,26 @@ static int add(void *engine_context, int fd, void *fd_info, int event_type) {
     poll_context->fds[poll_context->nfds].fd = fd;
     poll_context->fds[poll_context->nfds++].events = care;
   } else {
-    poll_context->fds[entry->poll_fds_index].events |= care;
+    assert(0);
   }
   return 0;
+}
+
+static int modify(void *engine_context, int fd, int event_type) {
+  zRPC_poll_context *poll_context = engine_context;
+  short care = POLLERR | POLLHUP | POLLNVAL;
+  if (event_type & EVE_WRITE) {
+    care |= POLLOUT;
+  }
+  if (event_type & EVE_READ) {
+    care |= POLLIN;
+  }
+  hashmap_entry *entry = hashmapGet(poll_context->fd_map, (void *) fd);
+  if (entry != NULL) {
+    poll_context->fds[entry->poll_fds_index].events = care;
+  } else {
+    assert(0);
+  }
 }
 
 static int del(void *engine_context, int fd, void **fd_info) {
@@ -106,7 +126,6 @@ static int del(void *engine_context, int fd, void **fd_info) {
   assert(move_entry != NULL);
   move_entry->poll_fds_index = entry->poll_fds_index;
   memcpy(&poll_context->fds[entry->poll_fds_index], &poll_context->fds[--poll_context->nfds], sizeof(struct pollfd));
-  poll_context->nfds--;
   hashmapRemove(poll_context->fd_map, (void *) fd);
   free(entry);
   return 0;
@@ -124,7 +143,7 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
       return -1;
     return 0;
   }
-  *results = calloc((size_t) p_rv, sizeof(**results));
+  *results = calloc((size_t) p_rv, sizeof(zRPC_event_engine_result*));
   int i = 0;
   for (int j = 0; j < nfds; j++) {
     int happen = event_set[j].revents;
@@ -152,7 +171,7 @@ static int dispatch(void *engine_context, int32_t timeout, zRPC_event_engine_res
     (*results)[i] = malloc(sizeof(zRPC_event_engine_result));
     (*results)[i]->event_type = res;
     (*results)[i]->fd = entry->fd;
-    (*results)[i]->fd_info = fd_info;
+    (*results)[i++]->fd_info = fd_info;
   }
   *nresults = (size_t) p_rv;
   return 0;

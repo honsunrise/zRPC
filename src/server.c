@@ -20,22 +20,22 @@ struct zRPC_server {
   void *server_engine_context;
 };
 
-zRPC_server *zRPC_server_create(struct zRPC_scheduler *scheduler, const char *addr, zRPC_pipe *pipe) {
+zRPC_server *zRPC_server_create(struct zRPC_scheduler *scheduler, zRPC_pipe *pipe) {
   zRPC_server *server = (zRPC_server *) malloc(sizeof(zRPC_server));
   server->scheduler = scheduler;
   server->pipe = pipe;
   server->server_engine = g_server_engines[0];
   server->server_engine_context = server->server_engine->initialize(scheduler);
+
+  return server;
+}
+
+void zRPC_server_start(zRPC_server *server, const char *addr) {
   char *host, *port;
   zRPC_split_host_port(addr, &host, &port);
   zRPC_inetaddr r_addr;
   parse_ipv4(addr, &r_addr);
-  server->server_engine->setup(server->server_engine_context, pipe, &r_addr);
-  return server;
-}
-
-void zRPC_server_start(zRPC_server *server) {
-  server->server_engine->start(server->server_engine_context);
+  server->server_engine->start(server->server_engine_context, server->pipe, &r_addr);
 }
 
 void zRPC_server_stop(zRPC_server *server) {
