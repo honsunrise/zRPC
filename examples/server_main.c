@@ -24,17 +24,6 @@ void warp_callee_add(void *param, zRPC_caller_instance *caller_instance, zRPC_ca
     printf("%d add\n", i++);
 }
 
-typedef struct test_node {
-    int a;
-    zRPC_list_head list_node;
-} test_node;
-
-test_node *getNode(int a) {
-    test_node *node = malloc(sizeof(test_node));
-    node->a = a;
-    return node;
-}
-
 int main(int argc, char **argv) {
     /*Init scheduler*/
     zRPC_scheduler *scheduler = zRPC_scheduler_create();

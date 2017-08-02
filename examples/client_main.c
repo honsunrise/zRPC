@@ -66,13 +66,14 @@ int test_client_thread(void *arg) {
   sleep(5);
 
   volatile int i = 0;
-  for (;;) {
+  for (;i < 1000000; ++i) {
     int a = rand() % 100;
     int b = rand() % 100;
     int64_t result;
     caller_add(zRPC_client_get_channel(client), a, b, &result);
     printf("%d add %d + %d result: %ld\n", i++, a, b, result);
   }
+  zRPC_scheduler_destroy(param->scheduler);
   return 0;
 }
 

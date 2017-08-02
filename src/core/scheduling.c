@@ -53,6 +53,10 @@ zRPC_scheduler *zRPC_scheduler_create() {
   zRPC_scheduler *scheduler = malloc(sizeof(zRPC_scheduler));
   memset(scheduler, 0, sizeof(zRPC_scheduler));
   zRPC_mutex_init(&scheduler->global_mutex);
+  zRPC_cond_init(&scheduler->global_cond);
+  zRPC_list_init(&scheduler->source_list_head);
+  scheduler->exit_loop = 0;
+  scheduler->running_loop = 0;
   scheduler->event_engine = g_event_engines[0];
   scheduler->event_engine_context = scheduler->event_engine->initialize();
   scheduler->timer_engine = g_timer_engines[0];
@@ -113,6 +117,7 @@ int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source 
     addition_info->listener = listener;
     scheduler->event_engine->add(scheduler->event_engine_context, listener->fd, addition_info, EVE_READ);
   }
+  zRPC_list_add_tail(&source->node, &scheduler->source_list_head);
   return 0;
 }
 
@@ -137,6 +142,7 @@ int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_sourc
     zRPC_listener_destroy(listener);
     zRPC_scheduler_notify(scheduler);
   }
+  zRPC_list_del(&source->node);
   return 0;
 }
 
@@ -147,7 +153,31 @@ void zRPC_scheduler_outer_event(zRPC_scheduler *scheduler, zRPC_event event) {
 }
 
 void zRPC_scheduler_destroy(zRPC_scheduler *scheduler) {
+  zRPC_mutex_lock(&scheduler->global_mutex);
+  if (!scheduler->running_loop) {
+    scheduler->running_loop = 0;
+    scheduler->exit_loop = 1;
+    zRPC_scheduler_notify(scheduler);
+    while (scheduler->exit_loop > 0)
+      zRPC_cond_wait(&scheduler->global_cond, &scheduler->global_mutex);
+  }
+  _addition_info *addition_info;
+  scheduler->event_engine->del(scheduler->event_engine_context,
+                               scheduler->notify->notify_fd[0],
+                               (void **) &addition_info);
+  free(addition_info);
+  zRPC_list_head *pos;
+  zRPC_list_for_each(pos, &scheduler->source_list_head) {
+    zRPC_event_source *source = zRPC_list_entry(pos, zRPC_event_source, node);
+    zRPC_scheduler_unregister_source(scheduler, source);
+  }
+  scheduler->event_engine->release(scheduler->event_engine_context);
+  scheduler->timer_engine->release(scheduler->timer_engine_context);
+  zRPC_queue_destroy(scheduler->event_queue);
+  zRPC_notify_destroy(scheduler->notify);
+  zRPC_mutex_unlock(&scheduler->global_mutex);
   zRPC_mutex_destroy(&scheduler->global_mutex);
+  zRPC_cond_destroy(&scheduler->global_cond);
 }
 
 void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
@@ -160,7 +190,7 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
 
     scheduler->owner_thread_id = zRPC_thread_current_id();
 
-    while (scheduler->running_loop) {
+    while (!scheduler->exit_loop) {
       zRPC_timer **timers;
       size_t ntimers;
       int timeout = scheduler->timer_engine->dispatch(scheduler->timer_engine_context, &timers, &ntimers);
@@ -173,6 +203,8 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
         tmp->event_info = timer;
         zRPC_queue_enqueue(scheduler->event_queue, tmp);
       }
+
+      zRPC_timer_engine_release_result(timers, ntimers);
 
       zRPC_event_engine_result **results;
       size_t nresults = 0;
@@ -254,5 +286,9 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
         free(event);
       }
     }
+    zRPC_mutex_lock(&scheduler->global_mutex);
+    scheduler->exit_loop = -1;
+    zRPC_cond_notify_one(&scheduler->global_cond);
+    zRPC_mutex_unlock(&scheduler->global_mutex);
   };
 }

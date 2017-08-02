@@ -69,7 +69,7 @@ static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nr
   zRPC_timespec ts;
   zRPC_timer *timer = NULL;
   size_t tmp_num = TIMER_BASE_TMP_NUM;
-  (*results) = calloc(tmp_num, sizeof(**results));
+  (*results) = calloc(tmp_num, sizeof(zRPC_timer*));
   size_t n = 0;
   if (zRPC_mutex_trylock(&context->run_mutex)) {
     do {

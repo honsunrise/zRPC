@@ -15,6 +15,7 @@ typedef void (*zRPC_notify_listener_change)(void *notify_param, struct zRPC_even
 
 typedef struct zRPC_event_source {
   DECLARE_RTTI;
+  zRPC_list_head node;
   zRPC_list_head event_listener_list;
   zRPC_list_head event_listener_remove_list;
   zRPC_notify_listener_change notify;
