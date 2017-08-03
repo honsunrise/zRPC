@@ -15,12 +15,18 @@ static void _notify_cb(void *source, zRPC_event event, void *param) {
   }
 }
 
+static void _destroy_callback(struct zRPC_event_source *source) {
+  zRPC_notify *notify = container_of(source, zRPC_notify, source);
+  zRPC_notify_destroy(notify);
+}
+
 void zRPC_notify_create(zRPC_notify **out) {
   zRPC_notify *notify = (zRPC_notify *) malloc(sizeof(zRPC_notify));
   RTTI_INIT_PTR(zRPC_notify, &notify->source);
   zRPC_create_notifiable_fd(notify->notify_fd);
   zRPC_source_init(&notify->source);
-  zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, 0xaaaaa);
+  notify->source.destroy_callback = _destroy_callback;
+  zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, 0);
   *out = notify;
 }
 

@@ -66,7 +66,7 @@ int test_client_thread(void *arg) {
   sleep(5);
 
   volatile int i = 0;
-  for (;i < 1000000; ++i) {
+  for (;i < 10000; ++i) {
     int a = rand() % 100;
     int b = rand() % 100;
     int64_t result;

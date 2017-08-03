@@ -18,6 +18,7 @@ typedef struct zRPC_listener {
   void *callback_arg;
   accepter_listener_callback callback;
   zRPC_inetaddr address;
+  zRPC_scheduler *scheduler;
 } zRPC_listener;
 
 void zRPC_listener_create(zRPC_listener **out,

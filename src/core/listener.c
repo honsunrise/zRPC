@@ -86,6 +86,12 @@ static int prepare_listen_socket(int fd, const zRPC_inetaddr *address) {
   return err;
 }
 
+static void _destroy_callback(struct zRPC_event_source *source) {
+  zRPC_listener *listener = container_of(source, zRPC_listener, source);
+  zRPC_listener_destroy(listener);
+}
+
+
 void zRPC_listener_create(zRPC_listener **out,
                           zRPC_socket_mode *smode,
                           zRPC_inetaddr address,
@@ -95,10 +101,12 @@ void zRPC_listener_create(zRPC_listener **out,
   zRPC_listener *listener = (zRPC_listener *) malloc(sizeof(zRPC_listener));
   RTTI_INIT_PTR(zRPC_listener, &listener->source);
   zRPC_source_init(&listener->source);
+  listener->source.destroy_callback = _destroy_callback;
   listener->fd = 0;
   listener->address = address;
   listener->callback = callback;
   listener->callback_arg = param;
+  listener->scheduler = scheduler;
   int errs[2];
   errs[0] = zRPC_create_socket(&address, SOCK_STREAM, 0, smode, &listener->fd);
   if (errs[0] == 0) {
@@ -112,5 +120,8 @@ void zRPC_listener_create(zRPC_listener **out,
 }
 
 void zRPC_listener_destroy(zRPC_listener *listener) {
+  zRPC_source_unregister_listener(&listener->source, EV_READ, __accepter_listener_callback);
+  zRPC_scheduler_unregister_source(listener->scheduler, &listener->source);
+  close(listener->fd);
   free(listener);
 }

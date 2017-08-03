@@ -13,19 +13,38 @@ extern "C" {
 #include "support/runnable.h"
 #include "source.h"
 
+typedef void (*zPRC_timer_callback)(zRPC_timespec deadline, void *param);
+
+typedef struct zRPC_timer_task {
+  zRPC_list_head node;
+  zRPC_timespec deadline;
+  zPRC_timer_callback callback;
+  uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
+  int triggered;
+  void *param;
+} zRPC_timer_task;
+
 typedef struct zRPC_timer {
   zRPC_event_source source;
-  zRPC_timespec deadline;
-  int triggered;
-  uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
+  struct zRPC_scheduler *scheduler;
+  zRPC_list_head task_list;
 } zRPC_timer;
 
 struct zRPC_scheduler;
 
-zRPC_timer *zRPC_timer_create(struct zRPC_scheduler *scheduler, zRPC_timespec deadline);
+zRPC_timer *zRPC_timer_create(struct zRPC_scheduler *scheduler);
 
-void zRPC_timer_destroy(struct zRPC_scheduler *scheduler, zRPC_timer *timer);
+zRPC_timer_task *zRPC_timer_timeout(zRPC_timer *timer,
+                                    zRPC_timespec timeout,
+                                    zPRC_timer_callback callback,
+                                    void *param);
 
+zRPC_timer_task *zRPC_timer_deadline(zRPC_timer *timer,
+                                     zRPC_timespec deadline,
+                                     zPRC_timer_callback callback,
+                                     void *param);
+
+void zRPC_timer_destroy(zRPC_timer *timer);
 
 #ifdef __cplusplus
 }

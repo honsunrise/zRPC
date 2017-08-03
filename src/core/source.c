@@ -77,3 +77,7 @@ void zRPC_source__emit_event(zRPC_event_source *source, zRPC_event event) {
   }
   zRPC_list_init(&source->event_listener_remove_list);
 }
+
+void zRPC_source_destroy(zRPC_event_source *source) {
+  source->destroy_callback(source);
+}

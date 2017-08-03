@@ -79,7 +79,6 @@ static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nr
       timer = zRPC_timer_heap_top(&context->heap);
       if (zRPC_time_cmp(timer->deadline, now) > 0)
         break;
-      timer->triggered = 1;
       zRPC_timer_heap_pop(&context->heap);
       zRPC_mutex_unlock(&context->mutex);
       context->min_deadline = timer->deadline;

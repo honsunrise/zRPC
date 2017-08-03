@@ -127,10 +127,16 @@ static void _event_listener_callback(void *source, zRPC_event event, void *param
   }
 }
 
+static void _destroy_callback(struct zRPC_event_source *source) {
+  zRPC_channel *channel = container_of(source, zRPC_channel, source);
+  zRPC_channel_destroy(channel);
+}
+
 void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_scheduler *scheduler) {
   zRPC_channel *channel = (zRPC_channel *) malloc(sizeof(zRPC_channel));
   RTTI_INIT_PTR(zRPC_channel, &channel->source);
   zRPC_source_init(&channel->source);
+  channel->source.destroy_callback = _destroy_callback;
   channel->pipe = pipe;
   channel->tail = channel->head = NULL;
   zRPC_filter_factory_linked_node *head = channel->pipe->head;

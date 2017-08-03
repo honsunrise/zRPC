@@ -169,7 +169,7 @@ void zRPC_scheduler_destroy(zRPC_scheduler *scheduler) {
   zRPC_list_head *pos;
   zRPC_list_for_each(pos, &scheduler->source_list_head) {
     zRPC_event_source *source = zRPC_list_entry(pos, zRPC_event_source, node);
-    zRPC_scheduler_unregister_source(scheduler, source);
+    zRPC_source_destroy(source);
   }
   scheduler->event_engine->release(scheduler->event_engine_context);
   scheduler->timer_engine->release(scheduler->timer_engine_context);
