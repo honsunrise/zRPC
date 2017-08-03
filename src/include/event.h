@@ -28,8 +28,9 @@ typedef enum zRPC_EVENT_STATUS {
 } zRPC_EVENT_STATUS;
 
 typedef struct zRPC_event {
-  void *event_info;
+  void *source;
   zRPC_EVENT_TYPE event_type;
+  void *event_info;
 } zRPC_event;
 
 typedef void (*zRPC_event_listener_callback)(void *source, zRPC_event event, void *param);

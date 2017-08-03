@@ -15,7 +15,14 @@ extern "C" {
 
 typedef void (*zPRC_timer_callback)(zRPC_timespec deadline, void *param);
 
+typedef struct zRPC_timer {
+  zRPC_event_source source;
+  struct zRPC_scheduler *scheduler;
+  zRPC_list_head task_list;
+} zRPC_timer;
+
 typedef struct zRPC_timer_task {
+  zRPC_timer *timer;
   zRPC_list_head node;
   zRPC_timespec deadline;
   zPRC_timer_callback callback;
@@ -23,12 +30,6 @@ typedef struct zRPC_timer_task {
   int triggered;
   void *param;
 } zRPC_timer_task;
-
-typedef struct zRPC_timer {
-  zRPC_event_source source;
-  struct zRPC_scheduler *scheduler;
-  zRPC_list_head task_list;
-} zRPC_timer;
 
 struct zRPC_scheduler;
 

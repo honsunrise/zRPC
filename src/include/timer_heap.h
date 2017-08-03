@@ -10,21 +10,21 @@
 #include "zRPC/timer.h"
 
 typedef struct zRPC_timer_heap {
-    zRPC_timer **timers;
+  zRPC_timer_task **timers;
     uint32_t timer_count;
     uint32_t timer_capacity;
 } zRPC_timer_heap;
 
 /* return 1 if the new timer is the first timer in the heap */
-int zRPC_timer_heap_add(zRPC_timer_heap *heap, zRPC_timer *timer);
+int zRPC_timer_heap_add(zRPC_timer_heap *heap, zRPC_timer_task *task);
 
 void zRPC_timer_heap_init(zRPC_timer_heap *heap);
 
 void zRPC_timer_heap_destroy(zRPC_timer_heap *heap);
 
-void zRPC_timer_heap_remove(zRPC_timer_heap *heap, zRPC_timer *timer);
+void zRPC_timer_heap_remove(zRPC_timer_heap *heap, zRPC_timer_task *task);
 
-zRPC_timer *zRPC_timer_heap_top(zRPC_timer_heap *heap);
+zRPC_timer_task *zRPC_timer_heap_top(zRPC_timer_heap *heap);
 
 void zRPC_timer_heap_pop(zRPC_timer_heap *heap);
 

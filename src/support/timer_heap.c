@@ -12,7 +12,7 @@
    position. This functor is called each time immediately after modifying a
    value in the underlying container, with the offset of the modified element as
    its argument. */
-static void adjust_upwards(zRPC_timer **first, uint32_t i, zRPC_timer *t) {
+static void adjust_upwards(zRPC_timer_task **first, uint32_t i, zRPC_timer_task *t) {
     while (i > 0) {
         uint32_t parent = (uint32_t) (((int) i - 1) / 2);
         if (zRPC_time_cmp(first[parent]->deadline, t->deadline) <= 0) break;
@@ -27,8 +27,7 @@ static void adjust_upwards(zRPC_timer **first, uint32_t i, zRPC_timer *t) {
 /* Adjusts a heap so as to move a hole at position i farther away from the root,
    until a suitable position is found for element t.  Then, copies t into that
    position. */
-static void adjust_downwards(zRPC_timer **first, uint32_t i, uint32_t length,
-                             zRPC_timer *t) {
+static void adjust_downwards(zRPC_timer_task **first, uint32_t i, uint32_t length, zRPC_timer_task *t) {
     for (;;) {
         uint32_t left_child = 1u + 2u * i;
         if (left_child >= length) break;
@@ -59,13 +58,13 @@ static void maybe_shrink(zRPC_timer_heap *heap) {
     }
 }
 
-static void note_changed_priority(zRPC_timer_heap *heap, zRPC_timer *timer) {
-    uint32_t i = timer->heap_index;
+static void note_changed_priority(zRPC_timer_heap *heap, zRPC_timer_task *task) {
+    uint32_t i = task->heap_index;
     uint32_t parent = (uint32_t) (((int) i - 1) / 2);
-    if (zRPC_time_cmp(heap->timers[parent]->deadline, timer->deadline) > 0) {
-        adjust_upwards(heap->timers, i, timer);
+    if (zRPC_time_cmp(heap->timers[parent]->deadline, task->deadline) > 0) {
+        adjust_upwards(heap->timers, i, task);
     } else {
-        adjust_downwards(heap->timers, i, heap->timer_count, timer);
+        adjust_downwards(heap->timers, i, heap->timer_count, task);
     }
 }
 
@@ -75,21 +74,21 @@ void zRPC_timer_heap_init(zRPC_timer_heap *heap) {
 
 void zRPC_timer_heap_destroy(zRPC_timer_heap *heap) { free(heap->timers); }
 
-int zRPC_timer_heap_add(zRPC_timer_heap *heap, zRPC_timer *timer) {
+int zRPC_timer_heap_add(zRPC_timer_heap *heap, zRPC_timer_task *task) {
     if (heap->timer_count == heap->timer_capacity) {
         heap->timer_capacity =
                 MAX(heap->timer_capacity + 1, heap->timer_capacity * 3 / 2);
         heap->timers =
                 realloc(heap->timers, heap->timer_capacity * sizeof(zRPC_timer *));
     }
-    timer->heap_index = heap->timer_count;
-    adjust_upwards(heap->timers, heap->timer_count, timer);
+    task->heap_index = heap->timer_count;
+    adjust_upwards(heap->timers, heap->timer_count, task);
     heap->timer_count++;
-    return timer->heap_index == 0;
+    return task->heap_index == 0;
 }
 
-void zRPC_timer_heap_remove(zRPC_timer_heap *heap, zRPC_timer *timer) {
-    uint32_t i = timer->heap_index;
+void zRPC_timer_heap_remove(zRPC_timer_heap *heap, zRPC_timer_task *task) {
+    uint32_t i = task->heap_index;
     if (i == heap->timer_count - 1) {
         heap->timer_count--;
         maybe_shrink(heap);
@@ -106,7 +105,7 @@ int zRPC_timer_heap_is_empty(zRPC_timer_heap *heap) {
     return heap->timer_count == 0;
 }
 
-zRPC_timer *zRPC_timer_heap_top(zRPC_timer_heap *heap) {
+zRPC_timer_task *zRPC_timer_heap_top(zRPC_timer_heap *heap) {
     if (zRPC_timer_heap_is_empty(heap))
         return NULL;
     return heap->timers[0];

@@ -17,11 +17,11 @@ typedef struct zRPC_timer_engine_vtable {
 
   int (*del)(void *engine_context, zRPC_timer *timer);
 
-  int32_t (*dispatch)(void *engine_context, zRPC_timer **results[], size_t *nresults);
+  int32_t (*dispatch)(void *engine_context, zRPC_timer_task **results[], size_t *nresults);
 
   void (*release)(void *engine_context);
 } zRPC_timer_engine_vtable;
 
-void zRPC_timer_engine_release_result(zRPC_timer **results, size_t nresults);
+void zRPC_timer_engine_release_result(zRPC_timer_task **results, size_t nresults);
 
 #endif //ZRPC_TIMER_ENGINE_H

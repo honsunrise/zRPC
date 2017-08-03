@@ -247,7 +247,7 @@ void *_channel_on_read(zRPC_channel *channel) {
       if (channel->is_active) {
         zRPC_event event;
         event.event_type = EV_CLOSE;
-        event.event_info = channel;
+        event.source = channel;
         zRPC_scheduler_outer_event(channel->scheduler, event);
       }
       return NULL;
@@ -282,7 +282,7 @@ void *_channel_on_write(zRPC_channel *channel) {
       if (channel->is_active) {
         zRPC_event event;
         event.event_type = EV_CLOSE;
-        event.event_info = channel;
+        event.source = channel;
         zRPC_scheduler_outer_event(channel->scheduler, event);
       }
       goto gone;
@@ -330,7 +330,7 @@ static void zRPC_channel_really_write(zRPC_channel *channel, zRPC_filter_out *ou
         if (channel->is_active) {
           zRPC_event event;
           event.event_type = EV_CLOSE;
-          event.event_info = channel;
+          event.source = channel;
           zRPC_scheduler_outer_event(channel->scheduler, event);
         }
         if (write_param->write_callback != NULL) {

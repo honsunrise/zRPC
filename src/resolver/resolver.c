@@ -79,7 +79,7 @@ static void complete_runnable(zRPC_resolved *resolved) {
   free(resolved->inetaddres.addrs);
 }
 
-static void _on_timer_retry(void *source, zRPC_event event, void *param) {
+static void _on_timer_retry(zRPC_timespec deadline, void *param) {
   zRPC_resolved_param *resolved_param = param;
   zRPC_resolved *resolved = resolved_param->resolved;
 
@@ -91,9 +91,8 @@ static void _on_timer_retry(void *source, zRPC_event event, void *param) {
   } else {
     zRPC_timespec deadline = zRPC_now(zRPC_CLOCK_MONOTONIC);
     deadline = zRPC_time_add(deadline, zRPC_time_from_seconds(10, zRPC_CLOCK_MONOTONIC));
-    resolved->retry_timer = zRPC_timer_create(resolved_param->scheduler, deadline);
-    zRPC_source_register_listener(&resolved->retry_timer->source, EV_TIMER, 1, _on_timer_retry, param);
-    zRPC_scheduler_register_source(resolved_param->scheduler, &resolved->retry_timer->source);
+    resolved->retry_timer = zRPC_timer_create(resolved_param->scheduler);
+    zRPC_timer_deadline(resolved->retry_timer, deadline, _on_timer_retry, param);
   }
 }
 
@@ -108,7 +107,6 @@ void zRPC_resolver_address(zRPC_scheduler *scheduler, const char *name, zRPC_res
   zRPC_resolved_param *param = malloc(sizeof(zRPC_resolved_param));
   param->resolved = resolved;
   param->scheduler = scheduler;
-  resolved->retry_timer = zRPC_timer_create(scheduler, deadline);
-  zRPC_source_register_listener(&resolved->retry_timer->source, EV_TIMER, 1, _on_timer_retry, param);
-  zRPC_scheduler_register_source(scheduler, &resolved->retry_timer->source);
+  resolved->retry_timer = zRPC_timer_create(scheduler);
+  zRPC_timer_deadline(resolved->retry_timer, deadline, _on_timer_retry, param);
 }

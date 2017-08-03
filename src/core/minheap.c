@@ -11,7 +11,7 @@ static int add(void *engine_context, zRPC_timer *timer);
 
 static int del(void *engine_context, zRPC_timer *timer);
 
-static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults);
+static int32_t dispatch(void *engine_context, zRPC_timer_task **results[], size_t *nresults);
 
 static void release(void *engine_context);
 
@@ -43,10 +43,14 @@ static void *initialize() {
 static int add(void *engine_context, zRPC_timer *timer) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_mutex_lock(&context->mutex);
-  int is_first_timer = zRPC_timer_heap_add(&context->heap, timer);
-  if (is_first_timer) {
-    if (zRPC_time_cmp(timer->deadline, context->min_deadline) < 0) {
-      context->min_deadline = timer->deadline;
+  zRPC_list_head *pos;
+  zRPC_list_for_each(pos, &timer->task_list) {
+    zRPC_timer_task *task = zRPC_list_entry(pos, zRPC_timer_task, node);
+    int is_first_timer = zRPC_timer_heap_add(&context->heap, task);
+    if (is_first_timer) {
+      if (zRPC_time_cmp(task->deadline, context->min_deadline) < 0) {
+        context->min_deadline = task->deadline;
+      }
     }
   }
   zRPC_mutex_unlock(&context->mutex);
@@ -56,18 +60,22 @@ static int add(void *engine_context, zRPC_timer *timer) {
 static int del(void *engine_context, zRPC_timer *timer) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_mutex_lock(&context->mutex);
-  zRPC_timer_heap_remove(&context->heap, timer);
+  zRPC_list_head *pos;
+  zRPC_list_for_each(pos, &timer->task_list) {
+    zRPC_timer_task *task = zRPC_list_entry(pos, zRPC_timer_task, node);
+    zRPC_timer_heap_remove(&context->heap, task);
+  }
   zRPC_mutex_unlock(&context->mutex);
   return 0;
 }
 
 #define TIMER_BASE_TMP_NUM 512
 
-static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nresults) {
+static int32_t dispatch(void *engine_context, zRPC_timer_task **results[], size_t *nresults) {
   zRPC_minheap_timer_context *context = engine_context;
   zRPC_timespec now = zRPC_now(zRPC_CLOCK_MONOTONIC);
   zRPC_timespec ts;
-  zRPC_timer *timer = NULL;
+  zRPC_timer_task *task = NULL;
   size_t tmp_num = TIMER_BASE_TMP_NUM;
   (*results) = calloc(tmp_num, sizeof(zRPC_timer*));
   size_t n = 0;
@@ -76,35 +84,35 @@ static int32_t dispatch(void *engine_context, zRPC_timer **results[], size_t *nr
       zRPC_mutex_lock(&context->mutex);
       if (zRPC_timer_heap_is_empty(&context->heap))
         break;
-      timer = zRPC_timer_heap_top(&context->heap);
-      if (zRPC_time_cmp(timer->deadline, now) > 0)
+      task = zRPC_timer_heap_top(&context->heap);
+      if (zRPC_time_cmp(task->deadline, now) > 0)
         break;
       zRPC_timer_heap_pop(&context->heap);
       zRPC_mutex_unlock(&context->mutex);
-      context->min_deadline = timer->deadline;
+      context->min_deadline = task->deadline;
       if(n >= tmp_num) {
         *results = realloc(*results, tmp_num *= 2);
       }
-      (*results)[n++] = timer;
+      (*results)[n++] = task;
     } while (1);
     *nresults = n;
     zRPC_mutex_unlock(&context->mutex);
     zRPC_mutex_unlock(&context->run_mutex);
   }
 
-  if (timer == NULL) {
+  if (task == NULL) {
     ts = zRPC_time_inf_future(zRPC_TIMESPAN);
     return zRPC_time_to_millis(ts);
   }
 
   now = zRPC_now(zRPC_CLOCK_MONOTONIC);
 
-  if (zRPC_time_cmp(timer->deadline, now) < 0) {
+  if (zRPC_time_cmp(task->deadline, now) < 0) {
     ts = zRPC_time_0(zRPC_TIMESPAN);
     return zRPC_time_to_millis(ts);
   }
 
-  return zRPC_time_to_millis(zRPC_time_sub(timer->deadline, now));
+  return zRPC_time_to_millis(zRPC_time_sub(task->deadline, now));
 }
 
 

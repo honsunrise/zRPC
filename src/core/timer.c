@@ -8,8 +8,9 @@
 
 static void _timer_cb(void *source, zRPC_event event, void *param) {
   zRPC_timer *timer = source;
+  zRPC_timer_task *task  = event.event_info;
   if (event.event_type & EV_TIMER) {
-    timer;
+    task->callback(task->deadline, task->param);
   }
 }
 static void _destroy_callback(struct zRPC_event_source *source) {
@@ -44,7 +45,9 @@ zRPC_timer_task *zRPC_timer_deadline(zRPC_timer *timer,
   task->callback = callback;
   task->param = param;
   task->deadline = deadline;
+  task->timer = timer;
   zRPC_list_add_tail(&task->node, &timer->task_list);
+  return task;
 }
 
 void zRPC_timer_destroy(zRPC_timer *timer) {
