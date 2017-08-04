@@ -51,7 +51,6 @@ typedef struct zRPC_channel {
   zRPC_list_head done_write;
   zRPC_mutex write_lock;
   zRPC_mutex read_lock;
-  zRPC_event_listener *e_o;
   zRPC_event_listener *e_a;
 } zRPC_channel;
 

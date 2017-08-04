@@ -189,7 +189,6 @@ void zRPC_channel_destroy(zRPC_channel *channel) {
       head = head->next;
       free(node);
     }
-    zRPC_source_unregister_listener(&channel->source, channel->e_o);
     zRPC_source_unregister_listener(&channel->source, channel->e_a);
     zRPC_scheduler_unregister_source(channel->scheduler, &channel->source);
     free(channel);
