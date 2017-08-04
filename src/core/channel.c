@@ -171,7 +171,7 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_sched
                                 0,
                                 _event_listener_callback,
                                 NULL);
-  channel->e_o = zRPC_source_register_listener(&channel->source,
+  zRPC_source_register_listener(&channel->source,
                                 EV_OPEN,
                                 1,
                                 _event_listener_callback,
