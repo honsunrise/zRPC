@@ -26,13 +26,14 @@ void zRPC_notify_create(zRPC_notify **out) {
   zRPC_create_notifiable_fd(notify->notify_fd);
   zRPC_source_init(&notify->source);
   notify->source.destroy_callback = _destroy_callback;
-  zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, 0);
+  notify->event_listener =
+      zRPC_source_register_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, 0, _notify_cb, 0);
   *out = notify;
 }
 
 void zRPC_notify_destroy(zRPC_notify *notify) {
   zRPC_destroy_notifiable_fd(notify->notify_fd);
-  zRPC_source_unregister_listener(&notify->source, EV_READ | EV_CLOSE | EV_ERROR, _notify_cb);
+  zRPC_source_unregister_listener(&notify->source, notify->event_listener);
   free(notify);
 }
 

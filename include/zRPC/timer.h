@@ -26,6 +26,7 @@ typedef struct zRPC_timer_task {
   zRPC_list_head node;
   zRPC_timespec deadline;
   zPRC_timer_callback callback;
+  zRPC_event_listener *listener;
   uint32_t heap_index; /* INVALID_HEAP_INDEX if not in heap */
   int triggered;
   void *param;

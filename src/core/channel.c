@@ -166,12 +166,12 @@ void zRPC_channel_create(zRPC_channel **out, zRPC_pipe *pipe, int fd, zRPC_sched
   zRPC_list_init(&channel->done_write);
   zRPC_ring_buf_create(&channel->buffer, 4096);
   zRPC_scheduler_register_source(scheduler, &channel->source);
-  zRPC_source_register_listener(&channel->source,
+  channel->e_a = zRPC_source_register_listener(&channel->source,
                                 EV_READ | EV_CLOSE | EV_ERROR,
                                 0,
                                 _event_listener_callback,
                                 NULL);
-  zRPC_source_register_listener(&channel->source,
+  channel->e_o = zRPC_source_register_listener(&channel->source,
                                 EV_OPEN,
                                 1,
                                 _event_listener_callback,
@@ -189,6 +189,8 @@ void zRPC_channel_destroy(zRPC_channel *channel) {
       head = head->next;
       free(node);
     }
+    zRPC_source_unregister_listener(&channel->source, channel->e_o);
+    zRPC_source_unregister_listener(&channel->source, channel->e_a);
     zRPC_scheduler_unregister_source(channel->scheduler, &channel->source);
     free(channel);
   }

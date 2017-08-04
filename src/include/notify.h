@@ -10,6 +10,7 @@ typedef struct zRPC_notify {
   zRPC_event_source source;
   int is_notify_pending;
   int notify_fd[2];
+  zRPC_event_listener *event_listener;
 } zRPC_notify;
 
 void zRPC_notify_create(zRPC_notify **out);

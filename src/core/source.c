@@ -7,12 +7,12 @@
 void zRPC_source_init(zRPC_event_source *source) {
   source->key = (intptr_t) source;
   source->notify = NULL;
-  source->notify_param = NULL;
+  source->scheduler = NULL;
   zRPC_list_init(&source->event_listener_list);
   zRPC_list_init(&source->event_listener_remove_list);
 }
 
-void zRPC_source_register_listener(zRPC_event_source *source,
+zRPC_event_listener* zRPC_source_register_listener(zRPC_event_source *source,
                                    int event_type,
                                    int onece,
                                    zRPC_event_listener_callback callback,
@@ -25,30 +25,22 @@ void zRPC_source_register_listener(zRPC_event_source *source,
   zRPC_list_add_tail(&listener->list_node, &source->event_listener_list);
   source->attention_event |= event_type;
   if(source->notify)
-    source->notify(source->notify_param, source, &source->event_listener_list);
+    source->notify(LISTENER_REGISTER, source, listener);
+  return listener;
 }
 
 void zRPC_source_unregister_listener(zRPC_event_source *source,
-                                     int event_type,
-                                     zRPC_event_listener_callback callback) {
-  zRPC_list_head *pos;
-  zRPC_event_listener *listener = NULL;
-  zRPC_list_for_each(pos, &source->event_listener_list) {
-    listener = zRPC_list_entry(pos, zRPC_event_listener, list_node);
-    if(listener->callback == callback && listener->event_type == event_type) {
-      break;
-    }
-  }
+                                     zRPC_event_listener *listener) {
   if(listener != NULL) {
-    source->attention_event &= ~event_type;
+    source->attention_event &= ~listener->event_type;
     zRPC_list_del(&listener->list_node);
     if(source->notify)
-      source->notify(source->notify_param, source, &source->event_listener_list);
+      source->notify(LISTENER_UNREGISTER, source, listener);
     free(listener);
   }
 }
 
-void zRPC_source__emit_event(zRPC_event_source *source, zRPC_event event) {
+void zRPC_source_emit_event(zRPC_event_source *source, zRPC_event event) {
   zRPC_list_head *pos;
   zRPC_event_listener *listener = NULL;
   zRPC_list_for_each(pos, &source->event_listener_list) {
@@ -72,7 +64,7 @@ void zRPC_source__emit_event(zRPC_event_source *source, zRPC_event event) {
     source->attention_event &= ~listener->event_type;
     zRPC_list_del(&listener->list_node);
     if(source->notify)
-      source->notify(source->notify_param, source, &source->event_listener_list);
+      source->notify(LISTENER_UNREGISTER, source, listener);
     free(listener);
   }
   zRPC_list_init(&source->event_listener_remove_list);

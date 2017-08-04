@@ -16,7 +16,7 @@ typedef struct zRPC_resolved zRPC_resolved;
 typedef void (*zRPC_resolver_complete_callback)(void *custom_arg, zRPC_resolved *resolved);
 
 struct zRPC_resolved {
-    const char *resolve_name;
+    char *resolve_name;
     zRPC_inetaddres inetaddres;
     zRPC_resolver_complete_callback callback;
     void *custom_arg;

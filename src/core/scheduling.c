@@ -54,7 +54,7 @@ zRPC_scheduler *zRPC_scheduler_create() {
   memset(scheduler, 0, sizeof(zRPC_scheduler));
   zRPC_mutex_init(&scheduler->global_mutex);
   zRPC_cond_init(&scheduler->global_cond);
-  zRPC_list_init(&scheduler->source_list_head);
+  zRPC_list_init(&scheduler->source_list);
   scheduler->exit_loop = 0;
   scheduler->running_loop = 0;
   scheduler->event_engine = g_event_engines[0];
@@ -79,15 +79,22 @@ void zRPC_scheduler_notify(zRPC_scheduler *scheduler) {
   }
 }
 
-static void _notify_listener_change(void *notify_param,
-                                    zRPC_event_source *source,
-                                    zRPC_list_head *event_listener_list) {
-  zRPC_scheduler *scheduler = notify_param;
+static void _notify_listener_change(zRPC_notify_type type,
+                                    struct zRPC_event_source *source,
+                                    void *notify_param) {
+  zRPC_scheduler *scheduler = source->scheduler;
   IF_TYPE_SAME(zRPC_channel, source) {
     zRPC_channel *channel = (zRPC_channel *) source;
     scheduler->event_engine->modify(scheduler->event_engine_context,
-                                 channel->fd,
-                                 _event_type_2_engine_event_type(source->attention_event));
+                                    channel->fd,
+                                    _event_type_2_engine_event_type(source->attention_event));
+  } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
+    if(type == LISTENER_REGISTER) {
+      zRPC_timer *timer = (zRPC_timer *) source;
+      zRPC_event_listener *listener = notify_param;
+      zRPC_timer_task *task = listener->param;
+      scheduler->timer_engine->add(scheduler->timer_engine_context, task);
+    }
   }
   zRPC_scheduler_notify(scheduler);
 }
@@ -96,7 +103,7 @@ int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source 
   IF_TYPE_SAME(zRPC_channel, source) {
     zRPC_channel *channel = (zRPC_channel *) source;
     source->notify = _notify_listener_change;
-    source->notify_param = scheduler;
+    source->scheduler = scheduler;
     _addition_info *addition_info = malloc(sizeof(_addition_info));
     addition_info->type = ADDITION_TYPE_CHANNEL;
     addition_info->channel = channel;
@@ -108,7 +115,13 @@ int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source 
                                  _event_type_2_engine_event_type(source->attention_event));
   } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
     zRPC_timer *timer = (zRPC_timer *) source;
-    scheduler->timer_engine->add(scheduler->timer_engine_context, timer);
+    source->notify = _notify_listener_change;
+    source->scheduler = scheduler;
+    zRPC_list_head *pos;
+    zRPC_list_for_each(pos, &timer->task_list) {
+      zRPC_timer_task *task = zRPC_list_entry(pos, zRPC_timer_task, node);
+      scheduler->timer_engine->add(scheduler->timer_engine_context, task);
+    }
     zRPC_scheduler_notify(scheduler);
   } ELSE_IF_TYPE_SAME(zRPC_listener, source) {
     zRPC_listener *listener = (zRPC_listener *) source;
@@ -117,13 +130,13 @@ int zRPC_scheduler_register_source(zRPC_scheduler *scheduler, zRPC_event_source 
     addition_info->listener = listener;
     scheduler->event_engine->add(scheduler->event_engine_context, listener->fd, addition_info, EVE_READ);
   }
-  zRPC_list_add_tail(&source->node, &scheduler->source_list_head);
+  zRPC_list_add_tail(&source->node, &scheduler->source_list);
   return 0;
 }
 
 int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_source *source) {
   source->notify = NULL;
-  source->notify_param = NULL;
+  source->scheduler = NULL;
   IF_TYPE_SAME(zRPC_channel, source) {
     zRPC_channel *channel = (zRPC_channel *) source;
     _addition_info *addition_info;
@@ -132,7 +145,11 @@ int zRPC_scheduler_unregister_source(zRPC_scheduler *scheduler, zRPC_event_sourc
     zRPC_scheduler_notify(scheduler);
   } ELSE_IF_TYPE_SAME(zRPC_timer, source) {
     zRPC_timer *timer = (zRPC_timer *) source;
-    scheduler->timer_engine->del(scheduler->timer_engine_context, timer);
+    zRPC_list_head *pos;
+    zRPC_list_for_each(pos, &timer->task_list) {
+      zRPC_timer_task *task = zRPC_list_entry(pos, zRPC_timer_task, node);
+      scheduler->timer_engine->del(scheduler->timer_engine_context, task);
+    }
     zRPC_scheduler_notify(scheduler);
   } ELSE_IF_TYPE_SAME(zRPC_listener, source) {
     zRPC_listener *listener = (zRPC_listener *) source;
@@ -154,12 +171,12 @@ void zRPC_scheduler_outer_event(zRPC_scheduler *scheduler, zRPC_event event) {
 
 void zRPC_scheduler_destroy(zRPC_scheduler *scheduler) {
   zRPC_mutex_lock(&scheduler->global_mutex);
-  if (!scheduler->running_loop) {
-    scheduler->running_loop = 0;
+  if (scheduler->running_loop) {
     scheduler->exit_loop = 1;
     zRPC_scheduler_notify(scheduler);
-    while (scheduler->exit_loop > 0)
+    while (scheduler->exit_loop == 1)
       zRPC_cond_wait(&scheduler->global_cond, &scheduler->global_mutex);
+    scheduler->running_loop = 0;
   }
   _addition_info *addition_info;
   scheduler->event_engine->del(scheduler->event_engine_context,
@@ -167,9 +184,16 @@ void zRPC_scheduler_destroy(zRPC_scheduler *scheduler) {
                                (void **) &addition_info);
   free(addition_info);
   zRPC_list_head *pos;
-  zRPC_list_for_each(pos, &scheduler->source_list_head) {
+  zRPC_list_head source_destroy_list;
+  zRPC_list_init(&source_destroy_list);
+  zRPC_list_for_each(pos, &scheduler->source_list) {
     zRPC_event_source *source = zRPC_list_entry(pos, zRPC_event_source, node);
+    zRPC_list_add(&source->node_destroy, &source_destroy_list);
+  }
+  zRPC_list_for_each(pos, &source_destroy_list) {
+    zRPC_event_source *source = zRPC_list_entry(pos, zRPC_event_source, node_destroy);
     zRPC_source_destroy(source);
+    zRPC_list_del(&source->node);
   }
   scheduler->event_engine->release(scheduler->event_engine_context);
   scheduler->timer_engine->release(scheduler->timer_engine_context);
@@ -190,8 +214,8 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
 
     scheduler->owner_thread_id = zRPC_thread_current_id();
 
-    while (!scheduler->exit_loop) {
-      zRPC_timer_task  **tasks;
+    while (scheduler->exit_loop == 0) {
+      zRPC_timer_task **tasks;
       size_t ntasks;
       int timeout = scheduler->timer_engine->dispatch(scheduler->timer_engine_context, &tasks, &ntasks);
 
@@ -273,22 +297,22 @@ void zRPC_scheduler_run(zRPC_scheduler *scheduler) {
         zRPC_queue_dequeue(scheduler->event_queue, (void **) &event);
         IF_TYPE_SAME(zRPC_channel, event->source) {
           zRPC_channel *channel = event->source;
-          zRPC_source__emit_event(&channel->source, *event);
+          zRPC_source_emit_event(&channel->source, *event);
         } ELSE_IF_TYPE_SAME(zRPC_timer, event->source) {
           zRPC_timer *timer = event->source;
-          zRPC_source__emit_event(&timer->source, *event);
+          zRPC_source_emit_event(&timer->source, *event);
         } ELSE_IF_TYPE_SAME(zRPC_notify, event->source) {
           zRPC_notify *notify = event->source;
-          zRPC_source__emit_event(&notify->source, *event);
+          zRPC_source_emit_event(&notify->source, *event);
         } ELSE_IF_TYPE_SAME(zRPC_listener, event->source) {
           zRPC_listener *listener = event->source;
-          zRPC_source__emit_event(&listener->source, *event);
+          zRPC_source_emit_event(&listener->source, *event);
         }
         free(event);
       }
     }
     zRPC_mutex_lock(&scheduler->global_mutex);
-    scheduler->exit_loop = -1;
+    scheduler->exit_loop = 2;
     zRPC_cond_notify_one(&scheduler->global_cond);
     zRPC_mutex_unlock(&scheduler->global_mutex);
   };

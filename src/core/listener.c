@@ -111,7 +111,8 @@ void zRPC_listener_create(zRPC_listener **out,
   errs[0] = zRPC_create_socket(&address, SOCK_STREAM, 0, smode, &listener->fd);
   if (errs[0] == 0) {
     prepare_listen_socket(listener->fd, &address);
-    zRPC_source_register_listener(&listener->source, EV_READ, 0, __accepter_listener_callback, NULL);
+    listener->event_listener =
+        zRPC_source_register_listener(&listener->source, EV_READ, 0, __accepter_listener_callback, NULL);
     zRPC_scheduler_register_source(scheduler, &listener->source);
     *out = listener;
   } else {
@@ -120,7 +121,7 @@ void zRPC_listener_create(zRPC_listener **out,
 }
 
 void zRPC_listener_destroy(zRPC_listener *listener) {
-  zRPC_source_unregister_listener(&listener->source, EV_READ, __accepter_listener_callback);
+  zRPC_source_unregister_listener(&listener->source, listener->event_listener);
   zRPC_scheduler_unregister_source(listener->scheduler, &listener->source);
   close(listener->fd);
   free(listener);

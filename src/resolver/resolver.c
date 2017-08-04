@@ -77,6 +77,8 @@ typedef struct zRPC_resolved_param {
 static void complete_runnable(zRPC_resolved *resolved) {
   resolved->callback(resolved->custom_arg, resolved);
   free(resolved->inetaddres.addrs);
+  free(resolved->resolve_name);
+  free(resolved);
 }
 
 static void _on_timer_retry(zRPC_timespec deadline, void *param) {

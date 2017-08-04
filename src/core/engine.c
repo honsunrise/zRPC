@@ -12,8 +12,8 @@ void zRPC_event_engine_release_result(zRPC_event_engine_result *results[], size_
 }
 
 void zRPC_timer_engine_release_result(zRPC_timer_task **results, size_t nresults) {
-  for (int i = 0; i < nresults; ++i) {
-    free(results[i]);
-  }
+//  for (int i = 0; i < nresults; ++i) {
+//    free(results[i]);
+//  }
   free(results);
 }

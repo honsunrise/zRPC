@@ -13,9 +13,9 @@ typedef struct zRPC_timer_engine_vtable {
 
   void *(*initialize)();
 
-  int (*add)(void *engine_context, zRPC_timer *timer);
+  int (*add)(void *engine_context, zRPC_timer_task *task);
 
-  int (*del)(void *engine_context, zRPC_timer *timer);
+  int (*del)(void *engine_context, zRPC_timer_task *task);
 
   int32_t (*dispatch)(void *engine_context, zRPC_timer_task **results[], size_t *nresults);
 
